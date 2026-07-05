@@ -1,0 +1,44 @@
+// localeSync.ts
+import { getCurrentInstance, onMounted, watch, type Ref } from 'vue'
+import { isWails } from './environment'
+
+export interface DesktopLocaleSyncOptions {
+  /** The frontend's active locale (e.g. from useI18n()). */
+  locale: Ref<string>
+  /** Applies a locale on the frontend (e.g. i18n setLocale). */
+  setLocale: (code: string) => unknown
+  /** Reads the persisted language from the desktop config service. */
+  getLanguage: () => Promise<string | null | undefined>
+  /** Persists a language via the desktop config service. */
+  setLanguage: (code: string) => Promise<unknown>
+}
+
+/**
+ * Adopts the persisted desktop language at startup and persists in-app changes
+ * so native UI re-localizes. Call once from app setup. No-op on the web.
+ */
+export function useDesktopLocaleSync(options: DesktopLocaleSyncOptions): void {
+  if (!isWails()) return
+
+  // Created synchronously so it binds to the caller's effect scope; a watch
+  // created after an await escapes the scope and leaks.
+  watch(options.locale, async (code) => {
+    const current = await options.getLanguage()
+    if (current === code) return
+    await options.setLanguage(code)
+  })
+
+  const adopt = async () => {
+    const persisted = await options.getLanguage()
+    if (persisted && persisted !== options.locale.value) {
+      await options.setLocale(persisted)
+    }
+  }
+
+  if (getCurrentInstance()) {
+    onMounted(() => { void adopt() })
+  }
+  else {
+    void adopt()
+  }
+}

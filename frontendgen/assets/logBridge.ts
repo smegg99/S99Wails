@@ -1,0 +1,42 @@
+// logBridge.ts
+import { isWails } from './environment'
+
+/** Matches the s99wails services/logger bindings surface. */
+export interface FrontendLogSink {
+  LogError: (message: string, fields: Record<string, unknown>) => unknown
+  LogWarn: (message: string, fields: Record<string, unknown>) => unknown
+}
+
+/**
+ * Forwards uncaught errors and unhandled rejections to the Go logger. Returns an
+ * uninstall function. No-op on the web.
+ */
+export function installFrontendLogBridge(sink: FrontendLogSink): () => void {
+  if (!isWails()) return () => {}
+
+  const onError = (event: ErrorEvent) => {
+    void sink.LogError('unhandled frontend error', {
+      message: event.message,
+      source: event.filename,
+      line: event.lineno,
+      column: event.colno,
+      stack: event.error instanceof Error ? event.error.stack : undefined,
+    })
+  }
+
+  const onRejection = (event: PromiseRejectionEvent) => {
+    const reason = event.reason
+    void sink.LogError('unhandled frontend rejection', {
+      reason: reason instanceof Error ? reason.message : String(reason),
+      stack: reason instanceof Error ? reason.stack : undefined,
+    })
+  }
+
+  window.addEventListener('error', onError)
+  window.addEventListener('unhandledrejection', onRejection)
+
+  return () => {
+    window.removeEventListener('error', onError)
+    window.removeEventListener('unhandledrejection', onRejection)
+  }
+}

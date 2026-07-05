@@ -1,0 +1,16 @@
+// environment.ts
+
+/** True when running inside a Wails webview. */
+export function isWails(): boolean {
+  return typeof window !== 'undefined' && '_wails' in window
+}
+
+/** Keep Wails-specific checks behind composables, not in components. */
+export function useWailsEnvironment() {
+  const isDesktop = isWails()
+
+  return {
+    isDesktop,
+    isWeb: !isDesktop,
+  }
+}

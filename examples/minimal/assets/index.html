@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>s99wails minimal example</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, sans-serif; background: #12181d; color: #e7e5df;
+    }
+    main { max-width: 34rem; padding: 2rem; }
+    h1 { color: #f0b429; font-size: 1.4rem; }
+    li { margin: .4rem 0; }
+    code { background: #1c242b; padding: .1rem .35rem; border-radius: .3rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>s99wails minimal example</h1>
+    <p>The Go shell around this page has wired up:</p>
+    <ul>
+      <li>a localized <strong>tray icon</strong>: left-click toggles this window, the menu re-localizes on locale changes</li>
+      <li><strong>close-to-tray</strong>: closing this window hides it; quit via the tray menu</li>
+      <li><strong>windowstate</strong>: move/resize, quit, restart, and the geometry persists in <code>windowstate.json</code></li>
+      <li>a <strong>theme watcher</strong> emitting <code>theme:changed</code>: flip your OS accent/dark mode</li>
+      <li>logger / program / theme <strong>services</strong>, callable once an app generates TS bindings</li>
+    </ul>
+    <p>In a real app this page is your Nuxt/Vue frontend; see the README.</p>
+  </main>
+</body>
+</html>
