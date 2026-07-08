@@ -37,16 +37,20 @@ func (f fileStore) Save(state windowstate.State) error {
 }
 
 func main() {
-	app := application.New(application.Options{Name: "windowstate example"})
-	window := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title: "windowstate example", Width: 800, Height: 600,
-	})
+	store := fileStore("windowstate.json")
 
-	stop, err := windowstate.Manage(window, fileStore("windowstate.json"), windowstate.Options{})
-	if err != nil {
+	app := application.New(application.Options{Name: "windowstate example"})
+
+	// Configure applies saved geometry before the window opens.
+	opts := application.WebviewWindowOptions{
+		Title: "windowstate example", Width: 800, Height: 600,
+	}
+	if err := windowstate.Configure(&opts, store); err != nil {
 		log.Println("restore:", err)
 	}
-	defer stop()
+	window := app.Window.NewWithOptions(opts)
+
+	defer windowstate.Track(window, store, windowstate.Options{})()
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

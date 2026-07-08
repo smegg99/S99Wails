@@ -17,6 +17,7 @@ func Example() {
 	if err != nil {
 		panic(err)
 	}
+	win.fire(events.Common.WindowShow) // restore applies when the window first shows
 	fmt.Printf("restored: %dx%d at %d,%d\n", win.w, win.h, win.x, win.y)
 
 	win.x, win.y = 300, 200

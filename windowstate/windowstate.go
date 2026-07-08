@@ -47,11 +47,11 @@ type Options struct {
 	OnError func(error)
 }
 
-// Restore applies a previously saved state to the window. Call it after
-// creating the window and before showing it. Restoring an unsaved store is a
-// no-op. Saved coordinates are applied verbatim; if the monitor layout
-// changed since the save, the window manager's placement rules take over.
-func Restore(win Window, store Store) error {
+// Configure applies a saved state to the window options before the window is
+// created, so it opens at its saved geometry. Prefer it over Restore. An
+// unsaved store is a no-op. Coordinates are applied verbatim: if the monitor
+// layout changed since the save, the window manager places the window.
+func Configure(opts *application.WebviewWindowOptions, store Store) error {
 	state, ok, err := store.Load()
 	if err != nil {
 		return err
@@ -61,22 +61,49 @@ func Restore(win Window, store Store) error {
 	}
 
 	if state.Width > 0 && state.Height > 0 {
-		win.SetSize(state.Width, state.Height)
+		opts.Width = state.Width
+		opts.Height = state.Height
 	}
-	win.SetPosition(state.X, state.Y)
+	opts.X = state.X
+	opts.Y = state.Y
 	if state.Maximised {
-		win.Maximise()
+		opts.StartState = application.WindowStateMaximised
 	}
 	return nil
 }
 
-// Track saves the window geometry on move/resize (debounced) and on
-// maximise/unmaximise and close. While the window is maximised the last
-// un-maximised geometry is kept, so restoring later yields a sensible size
-// after un-maximising. Geometry is read inside the window event callbacks
-// (the GUI thread); the debounce timer only persists the already-captured
-// state. Returns a stop function that unregisters the listeners and flushes
-// a final save; it is safe to call more than once.
+// Restore applies a saved state on the first WindowShow, because geometry
+// setters crash before app.Run starts the main thread.
+func Restore(win Window, store Store) error {
+	state, ok, err := store.Load()
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nil
+	}
+
+	var unregister func()
+	var once sync.Once
+	unregister = win.OnWindowEvent(events.Common.WindowShow, func(_ *application.WindowEvent) {
+		once.Do(func() {
+			if state.Width > 0 && state.Height > 0 {
+				win.SetSize(state.Width, state.Height)
+			}
+			win.SetPosition(state.X, state.Y)
+			if state.Maximised {
+				win.Maximise()
+			}
+			if unregister != nil {
+				unregister()
+			}
+		})
+	})
+	return nil
+}
+
+// Track saves geometry on move and resize (debounced) and on maximise,
+// unmaximise and close. stop unregisters, flushes a final save and is idempotent.
 func Track(win Window, store Store, opts Options) (stop func()) {
 	if opts.Debounce <= 0 {
 		opts.Debounce = 500 * time.Millisecond
@@ -84,9 +111,7 @@ func Track(win Window, store Store, opts Options) (stop func()) {
 
 	t := &tracker{win: win, store: store, opts: opts}
 
-	// Seed from the current geometry so a maximise before any move still has
-	// an un-maximised size to fall back to. Track is called from the app's
-	// setup path, which is main-thread territory.
+	// Seed an un-maximised size; before app.Run the getters report zeros.
 	t.capture()
 
 	unregister := []func(){
@@ -116,8 +141,7 @@ func Track(win Window, store Store, opts Options) (stop func()) {
 	}
 }
 
-// Manage restores the saved state and starts tracking. The returned stop
-// function is Track's.
+// Manage calls Restore and Track.
 func Manage(win Window, store Store, opts Options) (stop func(), err error) {
 	err = Restore(win, store)
 	stop = Track(win, store, opts)
@@ -138,9 +162,7 @@ type tracker struct {
 	saveMu sync.Mutex
 }
 
-// capture refreshes the pending state from the window. It must run on the
-// GUI thread (window event callbacks or setup). Geometry is only taken while
-// un-maximised; the maximised flag always reflects the window.
+// capture runs on the GUI thread. Geometry is only taken while un-maximised.
 func (t *tracker) capture() {
 	maximised := t.win.IsMaximised()
 

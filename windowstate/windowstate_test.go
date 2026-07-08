@@ -74,15 +74,54 @@ func (s *memStore) snapshot() (State, int) {
 	return s.state, s.saves
 }
 
-func TestRestoreAppliesSavedState(t *testing.T) {
+func TestRestoreAppliesSavedStateOnShow(t *testing.T) {
 	win := newFakeWindow()
 	store := &memStore{state: State{X: 100, Y: 50, Width: 1024, Height: 768, Maximised: true}, ok: true}
 
 	if err := Restore(win, store); err != nil {
 		t.Fatal(err)
 	}
+	// Nothing may touch the window before it enters its run loop: geometry
+	// calls dispatch to the GUI main thread, which does not exist yet.
+	if win.x != 10 || win.w != 800 || win.maximised {
+		t.Errorf("state applied before WindowShow: %+v", win)
+	}
+
+	win.fire(events.Common.WindowShow)
 	if win.x != 100 || win.y != 50 || win.w != 1024 || win.h != 768 || !win.maximised {
-		t.Errorf("state not applied: %+v", win)
+		t.Errorf("state not applied on WindowShow: %+v", win)
+	}
+
+	// A second show must not re-apply (one-shot).
+	win.x = 1
+	win.fire(events.Common.WindowShow)
+	if win.x != 1 {
+		t.Error("restore re-applied on second WindowShow")
+	}
+}
+
+func TestConfigureAppliesSavedState(t *testing.T) {
+	store := &memStore{state: State{X: 7, Y: 8, Width: 640, Height: 480, Maximised: true}, ok: true}
+	opts := application.WebviewWindowOptions{Width: 1280, Height: 800}
+
+	if err := Configure(&opts, store); err != nil {
+		t.Fatal(err)
+	}
+	if opts.X != 7 || opts.Y != 8 || opts.Width != 640 || opts.Height != 480 {
+		t.Errorf("options not configured: %+v", opts)
+	}
+	if opts.StartState != application.WindowStateMaximised {
+		t.Error("maximised state not configured")
+	}
+}
+
+func TestConfigureUnsavedStoreIsNoop(t *testing.T) {
+	opts := application.WebviewWindowOptions{Width: 1280, Height: 800}
+	if err := Configure(&opts, &memStore{}); err != nil {
+		t.Fatal(err)
+	}
+	if opts.Width != 1280 || opts.Height != 800 || opts.X != 0 {
+		t.Errorf("options changed without saved state: %+v", opts)
 	}
 }
 
@@ -171,5 +210,55 @@ func TestTrackReportsStoreErrors(t *testing.T) {
 	stop() // flush triggers Save -> error
 	if !errors.Is(got, sentinel) {
 		t.Errorf("OnError not called with store error, got %v", got)
+	}
+}
+
+// preShowWindow panics on geometry setters before show, as a real window
+// crashes before app.Run starts the main thread.
+type preShowWindow struct {
+	*fakeWindow
+	shown bool
+}
+
+func (p *preShowWindow) mutate(what string) {
+	if !p.shown {
+		panic("windowstate: " + what + " before the window was shown")
+	}
+}
+
+func (p *preShowWindow) SetSize(w, h int) application.Window {
+	p.mutate("SetSize")
+	return p.fakeWindow.SetSize(w, h)
+}
+
+func (p *preShowWindow) SetPosition(x, y int) {
+	p.mutate("SetPosition")
+	p.fakeWindow.SetPosition(x, y)
+}
+
+func (p *preShowWindow) Maximise() application.Window {
+	p.mutate("Maximise")
+	return p.fakeWindow.Maximise()
+}
+
+func (p *preShowWindow) show() {
+	p.shown = true
+	p.fire(events.Common.WindowShow)
+}
+
+func TestManageDoesNotTouchGeometryBeforeShow(t *testing.T) {
+	store := &memStore{state: State{X: 5, Y: 6, Width: 1024, Height: 768, Maximised: true}, ok: true}
+	win := &preShowWindow{fakeWindow: newFakeWindow()}
+
+	stop, err := Manage(win, store, Options{})
+	if err != nil {
+		t.Fatalf("Manage: %v", err)
+	}
+	defer stop()
+
+	win.show()
+
+	if win.w != 1024 || win.h != 768 || win.x != 5 || win.y != 6 || !win.maximised {
+		t.Errorf("state not applied on show: %+v", win.fakeWindow)
 	}
 }
