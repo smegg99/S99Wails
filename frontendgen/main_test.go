@@ -20,6 +20,7 @@ func TestRunEmitsComposables(t *testing.T) {
 		"localeSync.ts":  "getLanguage",
 		"systemTheme.ts": "theme:changed",
 		"logBridge.ts":   "unhandledrejection",
+		"appTitle.ts":    "useAppTitle",
 	} {
 		data, err := os.ReadFile(filepath.Join(out, "s99wails", file))
 		if err != nil {

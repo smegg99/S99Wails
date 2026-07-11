@@ -1,8 +1,6 @@
 // examples/minimal/main.go
 //
-// Minimal Wails v3 desktop shell wired with the s99wails packages: webkit
-// env quirks, localized tray with theme-aware icons, close-to-tray, and the
-// logger/program/theme services. Build with:
+// Minimal desktop shell using the s99wails packages. Build with:
 //
 //	go build -tags gtk3 ./examples/minimal
 package main
@@ -21,8 +19,8 @@ import (
 
 	"github.com/smegg99/s99wails/env"
 	"github.com/smegg99/s99wails/locale"
+	browserservice "github.com/smegg99/s99wails/services/browser"
 	loggerservice "github.com/smegg99/s99wails/services/logger"
-	programservice "github.com/smegg99/s99wails/services/program"
 	themeservice "github.com/smegg99/s99wails/services/theme"
 	"github.com/smegg99/s99wails/tray"
 	"github.com/smegg99/s99wails/windowstate"
@@ -64,7 +62,7 @@ func main() {
 		},
 		Services: []application.Service{
 			application.NewService(loggerservice.New(logger)),
-			application.NewService(programservice.New(logger)),
+			application.NewService(browserservice.New(logger)),
 			application.NewService(&themeservice.Service{}),
 		},
 	})

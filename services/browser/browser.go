@@ -1,13 +1,7 @@
 // browser.go
 //
-// Package browser is a Wails-bound service for opening URLs in the user's
-// default system browser. It is the one place a frontend hands an external
-// link to the desktop: a target="_blank" inside a Wails webview navigates the
-// webview, not the machine's browser, so a link that means to LEAVE the app
-// goes through here instead.
-//
-// The per-platform launch details are the Wails browser manager's; this only
-// bridges the call to the frontend bindings and logs it through s99logger.
+// Package browser opens URLs in the system browser; target="_blank" in a Wails
+// webview navigates the webview instead.
 package browser
 
 import (
@@ -22,13 +16,11 @@ const (
 	MsgOpenURLFailed s99logger.MessageID = "failed to open url in default browser"
 )
 
-// Service opens URLs in the user's default browser. It is bound to the
-// frontend, which calls OpenURL with the address to leave for.
 type Service struct {
 	log *s99logger.Logger
 }
 
-// New creates the service. log may be nil to disable logging.
+// New builds the service. A nil log disables logging.
 func New(log *s99logger.Logger) *Service {
 	return &Service{log: log}
 }
