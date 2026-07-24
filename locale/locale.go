@@ -1,8 +1,6 @@
-// locale.go
-//
-// Package locale is a small wrapper around go-i18n for native desktop UI
-// strings (tray menus, native dialogs). The frontend keeps its own i18n;
-// this covers the Go side only.
+// locale/locale.go
+
+// Package locale wraps go-i18n for native UI strings, loading S99Locale backend JSON.
 package locale
 
 import (

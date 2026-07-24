@@ -1,4 +1,5 @@
 // examples/locale/main.go
+
 package main
 
 import (
@@ -9,6 +10,7 @@ import (
 )
 
 func main() {
+	// Same shape as the `loc build` output in generated/backend, which an app embeds.
 	locales, err := locale.New(fstest.MapFS{
 		"en.json": {Data: []byte(`{"tray.show": "Show", "tray.quit": "Quit"}`)},
 		"pl.json": {Data: []byte(`{"tray.show": "Pokaż"}`)},
