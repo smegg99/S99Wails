@@ -1,0 +1,23 @@
+{
+  "name": "@smegg99/s99wails",
+  "version": "1.0.4",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "description": "Tooling for the TypeScript composables frontendgen embeds. Not published: apps receive these files from the generator, never from npm.",
+  "packageManager": "pnpm@10.30.1",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@wailsio/runtime": "3.0.0-beta.16",
+    "eslint": "^10.9.1",
+    "globals": "^17.12.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.69.0",
+    "vue": "^3.5.42"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [],
+    "paths": {
+      "@smegg99/s99ab/appearance": [
+        "../S99AB/web/src/appearance.ts"
+      ]
+    }
+  },
+  "include": [
+    ".frontendgen-check/**/*.ts"
+  ]
+}

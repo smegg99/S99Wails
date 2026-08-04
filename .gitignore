@@ -1,2 +1,4 @@
 node_modules
 traygen/traygen
+.frontendgen-check/
+.env
