@@ -1,15 +1,19 @@
 module github.com/smegg99/s99wails
 
-go 1.25.0
+go 1.27
 
 require (
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
-	github.com/smegg99/s99logger v1.0.1
-	github.com/wailsapp/wails/v3 v3.0.0-alpha2.117
+	github.com/smegg99/s99ab v0.0.0-00010101000000-000000000000
+	github.com/smegg99/s99logger v1.1.0
+	github.com/wailsapp/wails/v3 v3.0.0-beta.16
 	golang.org/x/sys v0.47.0
-	golang.org/x/text v0.40.0
+	golang.org/x/text v0.41.0
 )
+
+// s99ab is unpublished; consume it locally, one-directional (s99wails -> s99ab).
+replace github.com/smegg99/s99ab => ../S99AB
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
@@ -17,5 +21,5 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.22 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
 )
