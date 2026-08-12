@@ -1,4 +1,4 @@
-// appTitle.ts
+// frontendgen/assets/appTitle.ts
 import { isWails } from './environment'
 
 /** Matches the s99wails services/title bindings surface. */

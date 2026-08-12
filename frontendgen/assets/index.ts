@@ -1,27 +1,27 @@
-// index.ts
-export { isWails, useWailsEnvironment } from "./environment";
+// frontendgen/assets/index.ts
+export { isWails, useWailsEnvironment } from './environment'
 export {
   useDesktopLocaleSync,
   type DesktopLocaleSyncOptions,
-} from "./localeSync";
+} from './localeSync'
 export {
   useSystemTheme,
   THEME_CHANGED_EVENT,
   type SystemThemeInfo,
   type SystemThemeOptions,
-} from "./systemTheme";
-export { installFrontendLogBridge, type FrontendLogSink } from "./logBridge";
-export { useAppTitle, type AppTitleSink } from "./appTitle";
+} from './systemTheme'
+export { installFrontendLogBridge, type FrontendLogSink } from './logBridge'
+export { useAppTitle, type AppTitleSink } from './appTitle'
 export {
   foregroundOn,
   relativeLuminance,
   parseHex,
   type Rgb,
-} from "./contrast";
+} from './contrast'
 export {
   resolveDesktopTheme,
   type DesktopTheme,
   type DesktopThemeInputs,
   type ThemeMode,
   type AccentMode,
-} from "./resolveDesktopTheme";
+} from './resolveDesktopTheme'

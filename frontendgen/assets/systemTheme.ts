@@ -1,4 +1,4 @@
-// systemTheme.ts
+// frontendgen/assets/systemTheme.ts
 import { getCurrentInstance, onUnmounted, readonly, ref, type Ref } from 'vue'
 import { Events } from '@wailsio/runtime'
 import { isWails } from './environment'

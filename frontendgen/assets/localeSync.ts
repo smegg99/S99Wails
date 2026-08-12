@@ -1,4 +1,4 @@
-// localeSync.ts
+// frontendgen/assets/localeSync.ts
 import { getCurrentInstance, onMounted, watch, type Ref } from 'vue'
 import { isWails } from './environment'
 
@@ -36,9 +36,10 @@ export function useDesktopLocaleSync(options: DesktopLocaleSyncOptions): void {
   }
 
   if (getCurrentInstance()) {
-    onMounted(() => { void adopt() })
-  }
-  else {
+    onMounted(() => {
+      void adopt()
+    })
+  } else {
     void adopt()
   }
 }

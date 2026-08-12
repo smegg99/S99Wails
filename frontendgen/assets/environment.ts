@@ -1,4 +1,4 @@
-// environment.ts
+// frontendgen/assets/environment.ts
 
 /** True when running inside a Wails webview. */
 export function isWails(): boolean {

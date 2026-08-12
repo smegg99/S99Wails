@@ -1,4 +1,4 @@
-// logBridge.ts
+// frontendgen/assets/logBridge.ts
 import { isWails } from './environment'
 
 /** Matches the s99wails services/logger bindings surface. */
