@@ -1,4 +1,5 @@
-// gengo.go
+// traygen/gengo.go
+
 package main
 
 import (

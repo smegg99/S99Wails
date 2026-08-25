@@ -1,5 +1,6 @@
-// autostart_windows.go
 //go:build windows
+
+// autostart/autostart_windows.go
 
 package autostart
 

@@ -1,5 +1,5 @@
 // examples/autostart/main.go
-//
+
 // Round-trips an autostart entry inside a temp XDG_CONFIG_HOME, so the real
 // autostart directory is never touched.
 package main

@@ -1,4 +1,5 @@
-// schema_embed.go
+// examples/configservice/schema_embed.go
+
 package configservice
 
 import _ "embed"

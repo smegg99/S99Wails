@@ -1,4 +1,5 @@
 // examples/accent/main.go
+
 package main
 
 import (

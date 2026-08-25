@@ -1,4 +1,5 @@
-// watch.go
+// accent/watch.go
+
 package accent
 
 // Watch delivers a fresh Snapshot on every debounced accent or color-scheme change.

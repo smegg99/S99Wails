@@ -1,5 +1,5 @@
-// tray.go
-//
+// tray/tray.go
+
 // Package tray wraps the Wails v3 system tray: theme-aware icons that follow
 // the OS light/dark mode, rebuildable (re-localizable) menus, and the Linux
 // tray/window glue every app repeats.

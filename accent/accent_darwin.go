@@ -1,5 +1,6 @@
-// accent_darwin.go
 //go:build darwin
+
+// accent/accent_darwin.go
 
 package accent
 

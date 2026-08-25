@@ -1,5 +1,5 @@
-// theme.go
-//
+// services/theme/theme.go
+
 // Package theme exposes the OS dark mode and accent color to the frontend.
 package theme
 

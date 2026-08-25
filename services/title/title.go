@@ -1,5 +1,5 @@
-// title.go
-//
+// services/title/title.go
+
 // Package title sets each window title to an app name plus a translated phrase from the frontend.
 package title
 

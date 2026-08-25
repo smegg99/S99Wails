@@ -1,4 +1,5 @@
-// example_test.go
+// accent/example_test.go
+
 package accent_test
 
 import (

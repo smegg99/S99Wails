@@ -1,5 +1,6 @@
-// autostart_darwin.go
 //go:build darwin
+
+// autostart/autostart_darwin.go
 
 package autostart
 

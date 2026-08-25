@@ -1,4 +1,5 @@
-// update.go
+// examples/configservice/update.go
+
 package configservice
 
 import (

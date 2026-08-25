@@ -1,4 +1,5 @@
-// main_test.go
+// traygen/main_test.go
+
 package main
 
 import (

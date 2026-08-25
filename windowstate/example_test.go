@@ -1,4 +1,5 @@
-// example_test.go
+// windowstate/example_test.go
+
 package windowstate
 
 import (

@@ -1,4 +1,5 @@
-// tray_test.go
+// tray/tray_test.go
+
 package tray
 
 import (

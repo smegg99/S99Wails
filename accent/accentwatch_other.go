@@ -1,5 +1,6 @@
-// accent/accentwatch_other.go
 //go:build !linux
+
+// accent/accentwatch_other.go
 
 package accent
 

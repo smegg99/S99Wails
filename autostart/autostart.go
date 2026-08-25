@@ -1,5 +1,5 @@
-// autostart.go
-//
+// autostart/autostart.go
+
 // Package autostart registers per-user launch on login (XDG .desktop, Run key, LaunchAgent).
 package autostart
 

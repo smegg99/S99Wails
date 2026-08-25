@@ -1,5 +1,6 @@
-// autostart_linux_test.go
 //go:build linux
+
+// autostart/autostart_linux_test.go
 
 package autostart
 

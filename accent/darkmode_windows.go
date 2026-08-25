@@ -1,5 +1,6 @@
-// darkmode_windows.go
 //go:build windows
+
+// accent/darkmode_windows.go
 
 package accent
 

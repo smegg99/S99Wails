@@ -1,4 +1,5 @@
-// svg.go
+// traygen/svg.go
+
 package main
 
 import (

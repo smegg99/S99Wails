@@ -1,4 +1,5 @@
-// sheet.go
+// traygen/sheet.go
+
 package main
 
 import (

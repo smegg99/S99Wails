@@ -1,4 +1,5 @@
-// example_test.go
+// locale/example_test.go
+
 package locale_test
 
 import (

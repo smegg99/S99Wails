@@ -1,5 +1,5 @@
-// logger.go
-//
+// services/logger/logger.go
+
 // Package logger is a Wails-bound service bridging frontend log calls to
 // s99logger.
 package logger

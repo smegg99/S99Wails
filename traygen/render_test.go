@@ -1,4 +1,5 @@
-// render_test.go
+// traygen/render_test.go
+
 package main
 
 import (

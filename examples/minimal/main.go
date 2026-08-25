@@ -1,5 +1,5 @@
 // examples/minimal/main.go
-//
+
 // Minimal desktop shell using the s99wails packages. Build with:
 //
 //	go build -tags gtk3 ./examples/minimal

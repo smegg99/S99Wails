@@ -1,4 +1,5 @@
-// sheet_test.go
+// traygen/sheet_test.go
+
 package main
 
 import (

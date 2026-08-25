@@ -1,5 +1,6 @@
-// darkmode_other.go
 //go:build !(linux || windows || darwin)
+
+// accent/darkmode_other.go
 
 package accent
 

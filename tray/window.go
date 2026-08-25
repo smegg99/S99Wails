@@ -1,4 +1,5 @@
-// window.go
+// tray/window.go
+
 package tray
 
 import (

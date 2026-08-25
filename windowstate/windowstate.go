@@ -1,5 +1,5 @@
-// windowstate.go
-//
+// windowstate/windowstate.go
+
 // Package windowstate persists window position, size and maximised state through a Store.
 package windowstate
 

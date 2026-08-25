@@ -1,4 +1,5 @@
-// locale_test.go
+// locale/locale_test.go
+
 package locale
 
 import (

@@ -1,4 +1,5 @@
-// service.go
+// examples/configservice/service.go
+
 package configservice
 
 import "github.com/wailsapp/wails/v3/pkg/application"

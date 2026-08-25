@@ -1,4 +1,5 @@
-// emit.go
+// traygen/emit.go
+
 package main
 
 import (

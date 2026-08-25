@@ -1,5 +1,5 @@
 // examples/traygen/main.go
-//
+
 // Reads the icons generated from trayicons.cue:
 //
 //	go generate ./traygen

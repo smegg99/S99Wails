@@ -1,5 +1,6 @@
-// accent/accent_windows.go
 //go:build windows
+
+// accent/accent_windows.go
 
 package accent
 

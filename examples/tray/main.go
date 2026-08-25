@@ -1,5 +1,5 @@
 // examples/tray/main.go
-//
+
 // A tray icon with a menu: left-click toggles the window, closing the
 // window hides it to the tray, quit via the menu.
 package main

@@ -1,5 +1,5 @@
 // examples/themewatch/main.go
-//
+
 // Prints the theme once, then each theme:changed event. Change the OS accent or
 // dark mode to see events; Ctrl-C quits.
 package main

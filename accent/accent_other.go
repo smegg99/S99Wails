@@ -1,5 +1,6 @@
-// accent/accent_other.go
 //go:build !(linux || windows || darwin)
+
+// accent/accent_other.go
 
 package accent
 

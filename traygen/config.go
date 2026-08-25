@@ -1,4 +1,5 @@
-// config.go
+// traygen/config.go
+
 package main
 
 import (

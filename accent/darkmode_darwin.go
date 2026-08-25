@@ -1,5 +1,6 @@
-// darkmode_darwin.go
 //go:build darwin
+
+// accent/darkmode_darwin.go
 
 package accent
 

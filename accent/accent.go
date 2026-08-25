@@ -1,4 +1,5 @@
-// accent.go
+// accent/accent.go
+
 package accent
 
 import (

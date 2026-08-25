@@ -1,5 +1,5 @@
 // examples/localechange/main.go
-//
+
 // OnChange fires after every SetLocale; in an app you wire it to
 // trayManager.RebuildMenu so native menus re-localize.
 package main

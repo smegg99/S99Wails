@@ -1,5 +1,5 @@
 // examples/frontendgen/main.go
-//
+
 // Emit the Vue composables into gen/ and list them:
 //
 //	go generate ./frontendgen

@@ -1,4 +1,5 @@
-// render.go
+// traygen/render.go
+
 package main
 
 import (

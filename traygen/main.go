@@ -1,5 +1,5 @@
-// main.go
-//
+// traygen/main.go
+
 // traygen pregenerates tray icons from labeled SVGs: one icon per
 // theme x state, plus typed Go accessors and a preview contact sheet.
 // Consume as a Go tool dependency:

@@ -1,5 +1,6 @@
-// darkmode_linux.go
 //go:build linux
+
+// accent/darkmode_linux.go
 
 package accent
 
