@@ -71,6 +71,18 @@ cgo file behind a linux build tag, so the command does not compile elsewhere.
 
 ## Install
 
+This repository is private, so `go get` needs Go pointed away from the public
+proxy and git pointed at ssh:
+
+```sh
+go env -w GOPRIVATE='github.com/smegg99/*'
+git config --global url."ssh://git@github.com/smegg99/".insteadOf "https://github.com/smegg99/"
+```
+
+Set both. `GOPRIVATE` alone makes Go fetch over direct git, which then has no
+credentials. proxy.golang.org still serves v1.0.0 through v1.0.4 without any
+configuration; v1.1.0 and later are not on the public proxy.
+
 ```sh
 go get github.com/smegg99/s99wails
 go get -tool github.com/smegg99/s99wails/traygen
@@ -82,9 +94,10 @@ the same version and bump both together. On Linux, build with `-tags gtk3`
 (WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many GPU setups.
 
 Past v1.0.4 this module also requires
-[s99ab](https://github.com/smegg99/S99AB), which is unpublished, and a
-`replace` in a dependency's `go.mod` does not apply to your build. So point
-replace directives at your checkouts:
+[s99ab](https://github.com/smegg99/S99AB), which is private too. A `replace` in
+a dependency's `go.mod` does not apply to your build, so a consumer resolves
+s99ab itself - through the ssh configuration above, or by pointing replace
+directives at checkouts:
 
 ```
 replace (
