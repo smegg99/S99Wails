@@ -26,6 +26,8 @@ github.com/nicksnyder/go-i18n/v2 v2.6.1 h1:JDEJraFsQE17Dut9HFDHzCoAWGEQJom5s0TRd
 github.com/nicksnyder/go-i18n/v2 v2.6.1/go.mod h1:Vee0/9RD3Quc/NmwEjzzD7VTZ+Ir7QbXocrkhOzmUKA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/smegg99/s99ab v1.0.0 h1:HSSvYTQfv7xPT563Bi7J3WGP9szW1SYYG5+U1sLZQow=
+github.com/smegg99/s99ab v1.0.0/go.mod h1:hV2vkHTV/9XLFMnFP8nm7iFBamPsAsNF9vC0DLataHA=
 github.com/smegg99/s99logger v1.1.0 h1:m7kfyJgZK7H6ZKTgpRdzAlR13npwDWQK9Jufzad8hvo=
 github.com/smegg99/s99logger v1.1.0/go.mod h1:z4szjxYzOsSpHz2dDYxan4/9wjvWhQgJetW5osli2/U=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=

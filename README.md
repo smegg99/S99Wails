@@ -93,11 +93,13 @@ The module pins `wails/v3 v3.0.0-beta.16`. Wails v3 is beta; keep your app on
 the same version and bump both together. On Linux, build with `-tags gtk3`
 (WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many GPU setups.
 
-Past v1.0.4 this module also requires
-[s99ab](https://github.com/smegg99/S99AB), which is private too. A `replace` in
-a dependency's `go.mod` does not apply to your build, so a consumer resolves
-s99ab itself - through the ssh configuration above, or by pointing replace
-directives at checkouts:
+After v1.0.4 this module also requires
+[s99ab](https://github.com/smegg99/S99AB), which is private too. It is pinned
+to a released tag, not a `replace`, because a dependency's `replace` does not
+apply to your build. The ssh configuration above lets your build fetch it.
+
+To develop against local checkouts instead of released tags, point replace
+directives at them in your app:
 
 ```
 replace (

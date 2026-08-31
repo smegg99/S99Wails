@@ -5,15 +5,12 @@ go 1.27
 require (
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
-	github.com/smegg99/s99ab v0.0.0-00010101000000-000000000000
+	github.com/smegg99/s99ab v1.0.0
 	github.com/smegg99/s99logger v1.1.0
 	github.com/wailsapp/wails/v3 v3.0.0-beta.16
 	golang.org/x/sys v0.47.0
 	golang.org/x/text v0.41.0
 )
-
-// s99ab is unpublished; consume it locally, one-directional (s99wails -> s99ab).
-replace github.com/smegg99/s99ab => ../S99AB
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
