@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/smegg99/s99wails/autostart"
+	"github.com/smegg99/s99wails/v2/platform/autostart"
 )
 
 func main() {

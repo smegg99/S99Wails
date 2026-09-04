@@ -3,7 +3,7 @@ default:
     @just --list
 
 # Format, vet and test every module, then the TypeScript half.
-check: fmt vet test lint typecheck check-version check-frontendgen
+check: fmt vet test lint typecheck check-version check-frontendgen check-traygen
 
 # Format the Go files in every module.
 fmt:
@@ -57,6 +57,10 @@ check-version:
 frontendgen:
     cd examples && go generate ./frontendgen
 
+# Regenerate the worked example's tray icons, accessors and contact sheet.
+traygen:
+    cd examples && go generate ./traygen
+
 # Fail when the committed example output has drifted from the assets.
 check-frontendgen:
     #!/usr/bin/env bash
@@ -66,3 +70,16 @@ check-frontendgen:
     trap 'rm -rf "$tmp"' EXIT
     (cd "{{justfile_directory()}}/examples" && go tool frontendgen -out "$tmp" >/dev/null)
     diff -ru "{{justfile_directory()}}/examples/frontendgen/gen" "$tmp"
+
+# Fail when the committed example icons have drifted from the SVGs and the CUE.
+check-traygen:
+    #!/usr/bin/env bash
+    # A renderer update changes the PNG output without touching the sources.
+    set -euo pipefail
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+    (cd "{{justfile_directory()}}/examples" \
+        && go tool traygen -config traygen/trayicons.cue -out "$tmp" >/dev/null)
+    for item in dark light icons_gen.go preview.png; do
+        diff -ru "{{justfile_directory()}}/examples/traygen/$item" "$tmp/$item"
+    done

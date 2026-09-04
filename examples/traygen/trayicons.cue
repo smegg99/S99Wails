@@ -1,3 +1,5 @@
+// examples/traygen/trayicons.cue
+
 prefix: "example-tray"
 goPackage: "main"
 slots: ["badge"]

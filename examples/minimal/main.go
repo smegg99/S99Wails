@@ -17,13 +17,13 @@ import (
 	"github.com/smegg99/s99logger"
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"github.com/smegg99/s99wails/env"
-	"github.com/smegg99/s99wails/locale"
-	browserservice "github.com/smegg99/s99wails/services/browser"
-	loggerservice "github.com/smegg99/s99wails/services/logger"
-	themeservice "github.com/smegg99/s99wails/services/theme"
-	"github.com/smegg99/s99wails/tray"
-	"github.com/smegg99/s99wails/windowstate"
+	"github.com/smegg99/s99wails/v2/locale"
+	"github.com/smegg99/s99wails/v2/platform/env"
+	browserservice "github.com/smegg99/s99wails/v2/services/browser"
+	loggerservice "github.com/smegg99/s99wails/v2/services/logger"
+	themeservice "github.com/smegg99/s99wails/v2/services/theme"
+	"github.com/smegg99/s99wails/v2/shell/tray"
+	"github.com/smegg99/s99wails/v2/shell/windowstate"
 )
 
 //go:embed locales

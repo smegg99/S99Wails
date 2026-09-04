@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/smegg99/s99ab/work/daemon"
-	"github.com/smegg99/s99wails/proxy"
+	"github.com/smegg99/s99wails/v2/proxy"
 )
 
 // fakeDaemon serves an echo endpoint and a small SSE stream on a unix socket.

@@ -1,3 +1,5 @@
+// examples/configservice/config.cue
+
 package config
 
 #Config: {

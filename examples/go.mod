@@ -6,7 +6,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/smegg99/s99config v1.0.1
 	github.com/smegg99/s99logger v1.1.0
-	github.com/smegg99/s99wails v1.0.4
+	github.com/smegg99/s99wails/v2 v2.0.0
 	github.com/wailsapp/wails/v3 v3.0.0-beta.16
 )
 
@@ -43,7 +43,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/protocolbuffers/txtpbfmt v0.0.0-20260803135053-1fd8a60d1ffc // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
-	github.com/smegg99/s99wails/traygen v0.0.0-00010101000000-000000000000 // indirect
+	github.com/smegg99/s99wails/traygen/v2 v2.0.0 // indirect
 	github.com/tetratelabs/wazero v1.12.0 // indirect
 	github.com/zalando/go-keyring v0.2.8 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
@@ -57,11 +57,11 @@ require (
 )
 
 tool (
-	github.com/smegg99/s99wails/frontendgen
-	github.com/smegg99/s99wails/traygen
+	github.com/smegg99/s99wails/traygen/v2
+	github.com/smegg99/s99wails/v2/frontendgen
 )
 
 replace (
-	github.com/smegg99/s99wails => ../
-	github.com/smegg99/s99wails/traygen => ../traygen
+	github.com/smegg99/s99wails/traygen/v2 => ../traygen
+	github.com/smegg99/s99wails/v2 => ../
 )

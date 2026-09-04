@@ -5,7 +5,7 @@ package main
 import (
 	"embed"
 	"fmt"
-	"github.com/smegg99/s99wails/tray"
+	"github.com/smegg99/s99wails/v2/shell/tray"
 )
 
 // Status selects a pregenerated tray icon state.

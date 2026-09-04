@@ -1,4 +1,4 @@
-module github.com/smegg99/s99wails
+module github.com/smegg99/s99wails/v2
 
 go 1.27
 

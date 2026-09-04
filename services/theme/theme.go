@@ -7,7 +7,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 
-	"github.com/smegg99/s99wails/accent"
+	"github.com/smegg99/s99wails/v2/platform/accent"
 )
 
 const (

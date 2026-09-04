@@ -10,7 +10,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	theme "github.com/smegg99/s99wails/services/theme"
+	theme "github.com/smegg99/s99wails/v2/services/theme"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/smegg99/s99wails/accent"
+	"github.com/smegg99/s99wails/v2/platform/accent"
 )
 
 func main() {

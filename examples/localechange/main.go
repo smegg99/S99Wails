@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing/fstest"
 
-	"github.com/smegg99/s99wails/locale"
+	"github.com/smegg99/s99wails/v2/locale"
 )
 
 func main() {

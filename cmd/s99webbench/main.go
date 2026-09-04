@@ -15,7 +15,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/smegg99/s99wails/webbench"
+	"github.com/smegg99/s99wails/v2/webbench"
 )
 
 func main() {

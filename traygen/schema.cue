@@ -1,3 +1,5 @@
+// traygen/schema.cue
+
 package main
 
 #HexColor: string & =~"^#[0-9a-fA-F]{6}$"

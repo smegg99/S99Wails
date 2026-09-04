@@ -1,4 +1,4 @@
-module github.com/smegg99/s99wails/traygen
+module github.com/smegg99/s99wails/traygen/v2
 
 go 1.27
 

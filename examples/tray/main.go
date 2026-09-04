@@ -11,7 +11,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"github.com/smegg99/s99wails/tray"
+	"github.com/smegg99/s99wails/v2/shell/tray"
 )
 
 //go:embed icon.png

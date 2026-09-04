@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/smegg99/s99wails/env"
+	"github.com/smegg99/s99wails/v2/platform/env"
 )
 
 func main() {

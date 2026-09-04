@@ -47,7 +47,7 @@ func TestGenerateGo(t *testing.T) {
 		"//go:embed dark/linux-png-fallback light/linux-png-fallback",
 		"func Icon(dark bool, status Status) ([]byte, error)",
 		"func ForStatus(status Status) tray.IconsFunc",
-		`"github.com/smegg99/s99wails/tray"`,
+		`"github.com/smegg99/s99wails/v2/shell/tray"`,
 	} {
 		if !strings.Contains(src, want) {
 			t.Errorf("generated code missing %q\n---\n%s", want, src)
