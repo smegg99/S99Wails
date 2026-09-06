@@ -5,6 +5,8 @@ OS accent and dark-mode detection, native-side localization, a theme-aware
 system tray, window-state persistence, autostart, environment workarounds,
 and ready-made Wails services.
 
+[USAGE.md](USAGE.md) is how an app imports it.
+
 ## Why
 
 Every Wails app I built started by copying the previous app's desktop
