@@ -13,8 +13,9 @@ export interface Rgb {
 /** Parse #rgb / #rrggbb (with or without the hash, any alpha ignored) to 0..255 channels, or null. */
 export function parseHex(hex: string): Rgb | null {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})/i.exec(hex.trim())
-  if (!m) return null
-  const h = m[1].length === 3 ? m[1].replace(/./g, c => c + c) : m[1]
+  const group = m?.[1]
+  if (!group) return null
+  const h = group.length === 3 ? group.replace(/./g, c => c + c) : group
   const n = parseInt(h, 16)
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
 }
