@@ -149,29 +149,6 @@ func TestAppImageUsesItsOwnRung(t *testing.T) {
 	}
 }
 
-// The deprecated boolean has three other apps still on it; it must keep meaning
-// what it meant, including inside an AppImage where it was least negotiable.
-func TestDeprecatedDisableDMABUFStillMapsToLegacy(t *testing.T) {
-	requireLinux(t)
-
-	t.Run("plain", func(t *testing.T) {
-		clearRenderEnv(t)
-		res := Setup(Options{DisableDMABUF: true})
-		if res.RenderPath != RenderPathLegacy || !res.DMABUFDisabled {
-			t.Errorf("got %v, DMABUFDisabled=%v", res.RenderPath, res.DMABUFDisabled)
-		}
-	})
-
-	t.Run("appimage", func(t *testing.T) {
-		clearRenderEnv(t)
-		t.Setenv("APPIMAGE", "/tmp/app.AppImage")
-		res := Setup(Options{DisableDMABUF: true})
-		if res.RenderPath != RenderPathLegacy {
-			t.Errorf("got %v, want legacy", res.RenderPath)
-		}
-	})
-}
-
 func TestDebugVarTurnsOnTheOverlays(t *testing.T) {
 	requireLinux(t)
 	clearRenderEnv(t)

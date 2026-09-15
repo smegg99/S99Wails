@@ -65,54 +65,19 @@ type Options struct {
 
 	// DebugVar set to "1" calls DebugRendering. Empty uses DefaultDebugVar.
 	DebugVar string
-
-	// DisableDMABUF forces the legacy fallback.
-	//
-	// Deprecated: it is RenderPathLegacy under an older name, and it reads as
-	// though the choice were binary when there are two cheaper rungs above it.
-	// Set RenderPath instead.
-	DisableDMABUF bool
-
-	// GPUOptOutVar names an environment variable that, set to "1", keeps the
-	// DMABUF renderer AND native Wayland.
-	//
-	// Deprecated: it is an opt-out from a default that should not have been the
-	// default. Use RenderPathVar, which names every rung rather than only the
-	// two ends of the ladder.
-	GPUOptOutVar string
 }
 
 // Result reports what Setup did. Off Linux only AppImage is set.
 type Result struct {
 	AppImage       bool       // launched from an AppImage
 	RenderPath     RenderPath // the rung that ended up selected
-	RenderPathFrom string     // what selected it: default, appimage, env, var, legacy-option
+	RenderPathFrom string     // what selected it: default, appimage, env, var
 	DMABUFDisabled bool       // WEBKIT_DISABLE_DMABUF_RENDERER ended up set
 	X11Preferred   bool       // GDK_BACKEND was defaulted to x11
-	GPUOptOut      bool       // the GPU opt-out variable was honored
 }
 
-// Setup applies the Linux desktop workarounds in one call, before the GUI
-// initializes. It resolves the render path and the display backend together
-// because they interact, in this precedence:
-//
-//  1. The user's own environment. Any of the renderer variables already set is
-//     a decision that has been made; respect it and report which rung it names.
-//  2. RenderPathVar, if the app named one and its value parses. This is the
-//     escape hatch a user reaches for, so it beats everything the app chose.
-//  3. GPU opt-out (deprecated GPUOptOutVar == "1"): full DMABUF and native
-//     Wayland, no X11 default either, since the point is the GPU path.
-//  4. AppImage: AppImageRenderPath, because the host GPU stack is unknown.
-//  5. Otherwise: RenderPath, or RenderPathLegacy if the deprecated
-//     DisableDMABUF is set.
-//
-// Then PreferX11. An explicit GDK_BACKEND always wins over it.
-//
-// A zero Options is inert in the sense that matters: it selects RenderPathAuto,
-// which sets no variables at all. The old shape of this function defaulted to
-// the slowest rung and asked apps to opt out; that was backwards, and every app
-// that took the default paid about five times its frame rate for a workaround
-// it had never measured a need for.
+// Setup resolves the render path (user environment, then RenderPathVar, then
+// AppImageRenderPath inside an AppImage, then RenderPath) and applies PreferX11.
 func Setup(o Options) Result {
 	res := Result{AppImage: LaunchedViaAppImage()}
 	if runtime.GOOS != "linux" {
@@ -127,48 +92,32 @@ func Setup(o Options) Result {
 		DebugRendering()
 	}
 
-	path, from, skipX11 := o.resolveRenderPath()
+	path, from := o.resolveRenderPath()
 	applyRenderPath(path)
 	res.RenderPath, res.RenderPathFrom = path, from
 	res.DMABUFDisabled = explicitlySet("WEBKIT_DISABLE_DMABUF_RENDERER")
-	res.GPUOptOut = from == "gpu-optout"
 
-	if o.PreferX11 && !skipX11 {
+	if o.PreferX11 {
 		res.X11Preferred = PreferX11OnPlasmaWayland()
 	}
 	return res
 }
 
-// resolveRenderPath is Setup's precedence, separated so it can be read and
-// tested without touching the process environment's other halves. skipX11
-// reports the one case that also decides the display backend: the deprecated
-// GPU opt-out meant "the accelerated path, all of it", and XWayland is not that.
-func (o Options) resolveRenderPath() (path RenderPath, from string, skipX11 bool) {
+func (o Options) resolveRenderPath() (path RenderPath, from string) {
 	if p, ok := renderPathFromEnv(); ok {
-		return p, "env", false
+		return p, "env"
 	}
 	varName := o.RenderPathVar
 	if varName == "" {
 		varName = DefaultRenderPathVar
 	}
 	if p, ok := ParseRenderPath(os.Getenv(varName)); ok {
-		return p, "var", false
+		return p, "var"
 	}
-	if o.GPUOptOutVar != "" && os.Getenv(o.GPUOptOutVar) == "1" {
-		return RenderPathAuto, "gpu-optout", true
+	if LaunchedViaAppImage() {
+		return o.AppImageRenderPath, "appimage"
 	}
-	if res := LaunchedViaAppImage(); res {
-		// A caller still on the deprecated boolean asked for the legacy rung
-		// everywhere, and an AppImage was where it was least negotiable.
-		if o.AppImageRenderPath == RenderPathAuto && o.DisableDMABUF {
-			return RenderPathLegacy, "appimage", false
-		}
-		return o.AppImageRenderPath, "appimage", false
-	}
-	if o.DisableDMABUF {
-		return RenderPathLegacy, "legacy-option", false
-	}
-	return o.RenderPath, "default", false
+	return o.RenderPath, "default"
 }
 
 func explicitlySet(key string) bool {

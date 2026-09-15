@@ -39,14 +39,14 @@ func plasmaWayland(t *testing.T) {
 	t.Setenv("XDG_CURRENT_DESKTOP", "KDE")
 }
 
-func TestSetupDefaultsDisableDMABUFAndPreferX11(t *testing.T) {
+func TestSetupLegacyRenderPathAndPreferX11(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("Setup is a no-op off Linux")
 	}
 	clearDisplayEnv(t)
 	plasmaWayland(t)
 
-	res := Setup(Options{PreferX11: true, DisableDMABUF: true})
+	res := Setup(Options{PreferX11: true, RenderPath: RenderPathLegacy})
 
 	if got := os.Getenv("WEBKIT_DISABLE_DMABUF_RENDERER"); got != "1" {
 		t.Errorf("WEBKIT_DISABLE_DMABUF_RENDERER = %q, want 1", got)
@@ -59,27 +59,6 @@ func TestSetupDefaultsDisableDMABUFAndPreferX11(t *testing.T) {
 	}
 }
 
-func TestSetupGPUOptOutKeepsAcceleratedPath(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Setup is a no-op off Linux")
-	}
-	clearDisplayEnv(t)
-	plasmaWayland(t)
-	t.Setenv("THUG_GPU_TEST", "1")
-
-	res := Setup(Options{PreferX11: true, DisableDMABUF: true, GPUOptOutVar: "THUG_GPU_TEST"})
-
-	if _, set := os.LookupEnv("WEBKIT_DISABLE_DMABUF_RENDERER"); set {
-		t.Error("GPU opt-out must keep the DMABUF renderer (var unset)")
-	}
-	if _, set := os.LookupEnv("GDK_BACKEND"); set {
-		t.Error("GPU opt-out must stay on native Wayland (GDK_BACKEND unset)")
-	}
-	if !res.GPUOptOut || res.X11Preferred || res.DMABUFDisabled {
-		t.Errorf("result = %+v, want GPUOptOut only", res)
-	}
-}
-
 func TestSetupRespectsExplicitDMABUFOverride(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("Setup is a no-op off Linux")
@@ -89,7 +68,7 @@ func TestSetupRespectsExplicitDMABUFOverride(t *testing.T) {
 	// WebKit tests presence, so "0" still disables; Setup must keep the value.
 	t.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "0")
 
-	res := Setup(Options{PreferX11: true, DisableDMABUF: true})
+	res := Setup(Options{PreferX11: true, RenderPath: RenderPathLegacy})
 
 	if got := os.Getenv("WEBKIT_DISABLE_DMABUF_RENDERER"); got != "0" {
 		t.Errorf("explicit override overwritten: got %q, want 0", got)
