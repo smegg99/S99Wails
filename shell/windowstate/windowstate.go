@@ -20,8 +20,8 @@ type State struct {
 	Maximised bool `json:"maximised"`
 }
 
-// Store loads and saves a State. Load returns ok=false when nothing has been
-// saved yet.
+// Store loads and saves a State. Load returns ok=false when nothing is saved
+// or the stored content is unreadable, so the next save replaces it.
 type Store interface {
 	Load() (state State, ok bool, err error)
 	Save(State) error
@@ -46,17 +46,12 @@ type Options struct {
 	OnError func(error)
 }
 
-// Configure applies a saved state to the window options before the window is
-// created, so it opens at its saved geometry. Prefer it over Restore. An
-// unsaved store is a no-op. Coordinates are applied verbatim: if the monitor
-// layout changed since the save, the window manager places the window.
-func Configure(opts *application.WebviewWindowOptions, store Store) error {
+// Configure applies a saved state to window options before creation; prefer it
+// over Restore. With nothing saved it leaves the options unchanged.
+func Configure(opts *application.WebviewWindowOptions, store Store) (applied bool, err error) {
 	state, ok, err := store.Load()
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return nil
+	if err != nil || !ok {
+		return false, err
 	}
 
 	if state.Width > 0 && state.Height > 0 {
@@ -65,10 +60,11 @@ func Configure(opts *application.WebviewWindowOptions, store Store) error {
 	}
 	opts.X = state.X
 	opts.Y = state.Y
+	opts.InitialPosition = application.WindowXY
 	if state.Maximised {
 		opts.StartState = application.WindowStateMaximised
 	}
-	return nil
+	return true, nil
 }
 
 // Restore applies a saved state on the first WindowShow, because geometry

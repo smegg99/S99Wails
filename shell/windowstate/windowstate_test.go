@@ -105,11 +105,18 @@ func TestConfigureAppliesSavedState(t *testing.T) {
 	store := &memStore{state: State{X: 7, Y: 8, Width: 640, Height: 480, Maximised: true}, ok: true}
 	opts := application.WebviewWindowOptions{Width: 1280, Height: 800}
 
-	if err := Configure(&opts, store); err != nil {
+	applied, err := Configure(&opts, store)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if !applied {
+		t.Error("Configure reported no saved state")
 	}
 	if opts.X != 7 || opts.Y != 8 || opts.Width != 640 || opts.Height != 480 {
 		t.Errorf("options not configured: %+v", opts)
+	}
+	if opts.InitialPosition != application.WindowXY {
+		t.Error("saved coordinates left at the centred default")
 	}
 	if opts.StartState != application.WindowStateMaximised {
 		t.Error("maximised state not configured")
@@ -118,11 +125,19 @@ func TestConfigureAppliesSavedState(t *testing.T) {
 
 func TestConfigureUnsavedStoreIsNoop(t *testing.T) {
 	opts := application.WebviewWindowOptions{Width: 1280, Height: 800}
-	if err := Configure(&opts, &memStore{}); err != nil {
+	applied, err := Configure(&opts, &memStore{})
+	if err != nil {
 		t.Fatal(err)
+	}
+	if applied {
+		t.Error("Configure reported a saved state there was none of")
 	}
 	if opts.Width != 1280 || opts.Height != 800 || opts.X != 0 {
 		t.Errorf("options changed without saved state: %+v", opts)
+	}
+	// WindowCentered is the zero value, so a first run must not be pinned to 0,0.
+	if opts.InitialPosition != application.WindowCentered {
+		t.Error("unsaved store still asked for explicit coordinates")
 	}
 }
 
