@@ -119,10 +119,13 @@ func (l *Locales) Tn(messageID string, count int, data map[string]any) string {
 }
 
 func (l *Locales) localize(cfg *goi18n.LocalizeConfig) string {
-	// go-i18n returns a best-effort fallback translation alongside a non-nil
-	// error when the message is missing in the active language, so prefer any
-	// returned message over the error.
-	msg, err := l.Current().Localize(cfg)
+	return l.localizeWith(l.Current(), cfg)
+}
+
+// localizeWith uses a given localizer without changing the active one.
+func (l *Locales) localizeWith(loc *goi18n.Localizer, cfg *goi18n.LocalizeConfig) string {
+	// go-i18n can return a fallback message together with an error; prefer the message.
+	msg, err := loc.Localize(cfg)
 	if msg != "" {
 		return msg
 	}
