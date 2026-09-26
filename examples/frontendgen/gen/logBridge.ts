@@ -13,12 +13,12 @@ export interface FrontendLogSink {
  * Forwards uncaught errors and unhandled rejections to the Go logger. Returns an
  * uninstall function. No-op on the web.
  */
-export function installFrontendLogBridge(sink: FrontendLogSink): () => void {
+export function installFrontendLogBridge(sink: FrontendLogSink, messages: { error: string, rejection: string }): () => void {
   if (!isWails()) return () => {}
 
   const onError = (event: ErrorEvent) => {
-    void sink.LogError('unhandled frontend error', {
-      message: event.message,
+    void sink.LogError(messages.error, {
+      detail: event.message,
       source: event.filename,
       line: event.lineno,
       column: event.colno,
@@ -28,7 +28,8 @@ export function installFrontendLogBridge(sink: FrontendLogSink): () => void {
 
   const onRejection = (event: PromiseRejectionEvent) => {
     const reason = event.reason
-    void sink.LogError('unhandled frontend rejection', {
+    if (cancelledByCaller(reason)) return
+    void sink.LogError(messages.rejection, {
       reason: reason instanceof Error ? reason.message : String(reason),
       stack: reason instanceof Error ? reason.stack : undefined,
     })
@@ -41,4 +42,10 @@ export function installFrontendLogBridge(sink: FrontendLogSink): () => void {
     window.removeEventListener('error', onError)
     window.removeEventListener('unhandledrejection', onRejection)
   }
+}
+
+/** A cancelled binding call whose late rejection the runtime still reports. */
+function cancelledByCaller(reason: unknown): boolean {
+  return reason instanceof Error && reason.name === 'CancelledRejectionError'
+    && reason.cause instanceof Error && /context canceled$/.test(reason.cause.message)
 }
