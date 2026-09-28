@@ -5,6 +5,9 @@ package tray
 
 import (
 	"bytes"
+	"io/fs"
+	"os"
+	"runtime"
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -15,9 +18,14 @@ import (
 
 // Icons resolves the tray icon for the current OS theme.
 type Icons interface {
-	// Icon returns the PNG bytes to show while the OS theme is dark (true)
-	// or light (false).
+	// Icon returns native bitmap bytes for the current OS and panel theme.
 	Icon(dark bool) ([]byte, error)
+}
+
+// ThemedIcons supplies a Linux SVG icon theme together with the required bitmap fallback.
+type ThemedIcons interface {
+	Icons
+	ThemedIcon(dark bool) (files fs.FS, name string, err error)
 }
 
 // IconsFunc adapts a plain function to the Icons interface.
@@ -28,6 +36,8 @@ func (f IconsFunc) Icon(dark bool) ([]byte, error) { return f(dark) }
 // Options configures a Manager.
 type Options struct {
 	Icons Icons
+	// TemplateIcon asks macOS to tint black-and-transparent bitmap artwork.
+	TemplateIcon bool
 	// Tooltip supplies the (localized) tray tooltip. It is applied when set
 	// and re-applied on every RebuildMenu, so locale changes pick it up.
 	Tooltip func() string
@@ -50,6 +60,7 @@ type Manager struct {
 	closed    bool
 	buildMenu func() *application.Menu
 	lastIcon  []byte
+	themeDir  string
 
 	pendingApply chan struct{}
 }
@@ -182,6 +193,11 @@ func (m *Manager) requestApply() {
 // applyLoop owns all SetIcon calls.
 func (m *Manager) applyLoop() {
 	defer func() {
+		if m.themeDir != "" {
+			if err := os.RemoveAll(m.themeDir); err != nil {
+				m.errorf(err)
+			}
+		}
 		if r := recover(); r != nil {
 			m.errorf(recoveredError(r))
 		}
@@ -226,8 +242,18 @@ func (m *Manager) apply() {
 	}
 	m.mu.Unlock()
 	if same {
+		if runtime.GOOS == "linux" {
+			m.applyThemedIcon(icons, dark)
+		}
 		return
 	}
 
-	m.tray.SetIcon(icon)
+	if runtime.GOOS == "darwin" && m.opts.TemplateIcon {
+		m.tray.SetTemplateIcon(icon)
+	} else {
+		m.tray.SetIcon(icon)
+	}
+	if runtime.GOOS == "linux" {
+		m.applyThemedIcon(icons, dark)
+	}
 }
