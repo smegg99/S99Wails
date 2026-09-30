@@ -46,8 +46,8 @@ func TestLoadConfigValid(t *testing.T) {
 	if !cfg.TrayAdapter {
 		t.Error("default trayAdapter should be true")
 	}
-	if len(cfg.Sizes) != 1 || cfg.Sizes[0] != 32 {
-		t.Errorf("default sizes = %v, want [32]", cfg.Sizes)
+	if len(cfg.Platforms.Windows.Sizes) != 6 || cfg.Platforms.Windows.Sizes[0] != 16 {
+		t.Errorf("default Windows sizes = %v", cfg.Platforms.Windows.Sizes)
 	}
 	if got := cfg.StateNames(); len(got) != 2 || got[0] != "error" || got[1] != "idle" {
 		t.Errorf("StateNames = %v, want sorted [error idle]", got)
@@ -96,12 +96,48 @@ states: error: slots: dot: "#FF0000"
 func TestLoadConfigRejectsEmptySizes(t *testing.T) {
 	_, err := LoadConfig(writeConfig(t, `
 prefix: "x"
-sizes: []
+platforms: linux: sizes: []
 slots: []
 themes: { dark: source: "d.svg", light: source: "l.svg" }
 states: idle: {}
 `))
 	if err == nil {
 		t.Fatal("empty sizes should fail")
+	}
+}
+
+func TestLoadConfigWithoutAppIcon(t *testing.T) {
+	cfg, err := LoadConfig(writeConfig(t, validConfig))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.AppIcon != nil {
+		t.Errorf("AppIcon = %+v, want nil when the block is absent", cfg.AppIcon)
+	}
+}
+
+func TestLoadConfigAppIconDefaultSize(t *testing.T) {
+	cfg, err := LoadConfig(writeConfig(t, validConfig+`appIcon: source: "app.svg"`))
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if cfg.AppIcon == nil || cfg.AppIcon.Source != "app.svg" {
+		t.Fatalf("AppIcon = %+v, want source app.svg", cfg.AppIcon)
+	}
+	if len(cfg.AppIcon.Sizes) != 1 || cfg.AppIcon.Sizes[0] != 256 {
+		t.Errorf("default app icon sizes = %v, want [256]", cfg.AppIcon.Sizes)
+	}
+}
+
+func TestLoadConfigRejectsEmptyAppIconSource(t *testing.T) {
+	if _, err := LoadConfig(writeConfig(t, validConfig+`appIcon: source: ""`)); err == nil {
+		t.Fatal("an app icon without a source should fail")
+	}
+}
+
+func TestLoadConfigRejectsEmptyAppIconSizes(t *testing.T) {
+	_, err := LoadConfig(writeConfig(t, validConfig+`appIcon: { source: "app.svg", sizes: [] }`))
+	if err == nil || !strings.Contains(err.Error(), "app icon") {
+		t.Fatalf("want an app icon sizes error, got %v", err)
 	}
 }

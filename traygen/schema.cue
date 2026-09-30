@@ -11,8 +11,7 @@ package main
 	goPackage: string & !="" | *"trayicons" @go(GoPackage)
 	// trayAdapter emits the s99wails/tray ForStatus adapter.
 	trayAdapter: bool | *true @go(TrayAdapter)
-	// sizes in px; the first is primary and gets the bare file name.
-	sizes: [...int & >0] | *[32] @go(Sizes,type=[]int)
+	platforms: #Platforms @go(Platforms)
 	// slots declares the inkscape:label'd elements states may recolor.
 	// A state that assigns no color to a declared slot hides it.
 	slots: [...string] @go(Slots)
@@ -22,16 +21,52 @@ package main
 	themes: _ @go(Themes)
 	states: [string]: #State
 	states: _ @go(States)
+	// appIcon renders one more SVG, with no themes and no states, as the
+	// application's own icon (window, taskbar).
+	appIcon?: #AppIcon @go(AppIcon,optional=nillable)
+}
+
+#AppIcon: {
+	// source is relative to the config file, like the themes' sources.
+	source: string & !="" @go(Source)
+	// sizes in px; the first is embedded as AppIcon and gets the bare file name.
+	sizes: [...int & >0] | *[256] @go(Sizes,type=[]int)
 }
 
 #Theme: {
 	source: string & !="" @go(Source)
-	// per-state source overrides for this theme (highest precedence)
+	// Per-state source overrides, before platform and size overrides.
 	stateSources?: [string]: string
 	stateSources?: _ @go(StateSources,type=map[string]string)
 	// per-theme color overrides: state -> slot -> color
 	colors?: [string]: [string]: #HexColor
 	colors?: _ @go(Colors,type=map[string]map[string]string)
+	// Platform and pixel-size artwork overrides, relative to the config.
+	platforms?: [string]: #Sources
+	platforms?: _ @go(Platforms)
+}
+
+#Platforms: {
+	linux: #Platform & {sizes: *[32, 22, 24, 48, 64] | [...int & >0], padding: *0 | number & >=0 & <0.5}
+	windows: #Platform & {sizes: *[16, 20, 24, 32, 40, 48] | [...int & >0], padding: *0.0625 | number & >=0 & <0.5}
+	darwin: #Platform & {sizes: *[44, 22] | [...int & >0], padding: *0.09 | number & >=0 & <0.5}
+}
+
+#Platform: {
+	// Physical pixels; the first is the bitmap fallback's primary size.
+	sizes: [...int & >0 & <=256] @go(Sizes,type=[]int)
+	// Transparent inset as a fraction of the square canvas.
+	padding: number & >=0 & <0.5 @go(Padding,type=float64)
+	// macOS only: black pixels with the original alpha, tinted by AppKit.
+	template: *false | bool @go(Template)
+}
+
+#Sources: {
+	source?: string & !="" @go(Source)
+	stateSources?: [string]: string & !=""
+	stateSources?: _ @go(StateSources,type=map[string]string)
+	sizeSources?: [string]: string & !=""
+	sizeSources?: _ @go(SizeSources,type=map[string]string)
 }
 
 #State: {

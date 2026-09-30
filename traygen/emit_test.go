@@ -27,9 +27,9 @@ func TestBuildVariants(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildVariants: %v", err)
 	}
-	// 2 themes x 3 states
-	if len(variants) != 6 {
-		t.Fatalf("got %d variants, want 6", len(variants))
+	// Linux has a scalable entry and two sizes, Windows/macOS have two sizes.
+	if len(variants) != 42 {
+		t.Fatalf("got %d variants, want 42", len(variants))
 	}
 
 	byName := map[string]Variant{}
@@ -72,7 +72,11 @@ func TestWriteAssets(t *testing.T) {
 	mustExist := []string{
 		"dark/windows/app-tray-dark-idle.png",
 		"dark/windows/app-tray-dark-idle-24px.png",
-		"dark/linux/app-tray-dark-idle.svg",
+		"dark/linux/scalable/status/app-tray-dark-idle.svg",
+		"dark/linux/24x24/status/app-tray-dark-idle.svg",
+		"dark/linux/index.theme",
+		"dark/windows/app-tray-dark-idle.ico",
+		"dark/darwin/app-tray-dark-idle.png",
 		"dark/linux-png-fallback/app-tray-dark-idle.png",
 		"light/linux-png-fallback/app-tray-light-error.png",
 	}
@@ -99,7 +103,7 @@ func TestWriteAssets(t *testing.T) {
 func TestBuildVariantsSourcePrecedence(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name, marker string) {
-		svg := `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" data-marker="` + marker + `"><rect inkscape:label="badge" style="fill:#000000"/></svg>`
+		svg := `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" data-marker="` + marker + `"><rect inkscape:label="badge" style="fill:#000000"/></svg>`
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(svg), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -108,19 +112,13 @@ func TestBuildVariantsSourcePrecedence(t *testing.T) {
 	write("state.svg", "from-state")
 	write("override.svg", "from-override")
 
-	cfg := &Config{
-		Prefix: "p",
-		Slots:  []string{"badge"},
-		Sizes:  []int{32},
-		Themes: map[string]Theme{
-			"dark":  {Source: "theme.svg", StateSources: map[string]string{"special": "override.svg"}},
-			"light": {Source: "theme.svg"},
-		},
-		States: map[string]State{
-			"plain":   {},
-			"special": {Source: "state.svg"},
-		},
+	cfg := loadTestConfig(t)
+	cfg.Prefix = "p"
+	cfg.Themes = map[string]Theme{
+		"dark":  {Source: "theme.svg", StateSources: map[string]string{"special": "override.svg"}},
+		"light": {Source: "theme.svg"},
 	}
+	cfg.States = map[string]State{"plain": {}, "special": {Source: "state.svg"}}
 
 	variants, err := BuildVariants(cfg, dir)
 	if err != nil {
@@ -139,5 +137,51 @@ func TestBuildVariantsSourcePrecedence(t *testing.T) {
 	}
 	if !strings.Contains(byName["p-dark-special"], "from-override") {
 		t.Error("theme.StateSources should beat state.Source")
+	}
+}
+
+func TestWriteAppIcon(t *testing.T) {
+	cfg := loadTestConfig(t)
+	cfg.AppIcon = &AppIcon{Source: "logo-dark.svg", Sizes: []int{64, 16}}
+	r, err := NewRenderer(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+
+	out := t.TempDir()
+	if err := WriteAppIcon(cfg, r, "testdata", out); err != nil {
+		t.Fatalf("WriteAppIcon: %v", err)
+	}
+
+	// The first size gets the bare name, the others -<N>px, as the tray's do.
+	for rel, want := range map[string]int{
+		"appicon/app-tray-app.png":      64,
+		"appicon/app-tray-app-16px.png": 16,
+	} {
+		data, err := os.ReadFile(filepath.Join(out, rel))
+		if err != nil {
+			t.Fatalf("missing %s: %v", rel, err)
+		}
+		img, err := png.Decode(bytes.NewReader(data))
+		if err != nil {
+			t.Fatalf("%s: %v", rel, err)
+		}
+		if b := img.Bounds(); b.Dx() != want || b.Dy() != want {
+			t.Errorf("%s is %dx%d, want %d", rel, b.Dx(), b.Dy(), want)
+		}
+	}
+}
+
+func TestWriteAppIconMissingSource(t *testing.T) {
+	cfg := loadTestConfig(t)
+	cfg.AppIcon = &AppIcon{Source: "nope.svg", Sizes: []int{64}}
+	r, err := NewRenderer(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	if err := WriteAppIcon(cfg, r, "testdata", t.TempDir()); err == nil {
+		t.Fatal("a missing app icon source must error")
 	}
 }

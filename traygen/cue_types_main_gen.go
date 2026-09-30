@@ -14,8 +14,7 @@ type Config struct {
 	// trayAdapter emits the s99wails/tray ForStatus adapter.
 	TrayAdapter bool `json:"trayAdapter"`
 
-	// sizes in px; the first is primary and gets the bare file name.
-	Sizes []int `json:"sizes"`
+	Platforms Platforms `json:"platforms"`
 
 	// slots declares the inkscape:label'd elements states may recolor.
 	// A state that assigns no color to a declared slot hides it.
@@ -24,16 +23,66 @@ type Config struct {
 	Themes map[string]Theme `json:"themes"`
 
 	States map[string]State `json:"states"`
+
+	// appIcon renders one more SVG, with no themes and no states, as the
+	// application's own icon (window, taskbar).
+	AppIcon *AppIcon `json:"appIcon,omitempty"`
+}
+
+type Platforms struct {
+	Linux struct {
+		// Physical pixels; the first is the bitmap fallback's primary size.
+		Sizes []int `json:"sizes"`
+
+		// Transparent inset as a fraction of the square canvas.
+		Padding float64 `json:"padding"`
+
+		// macOS only: black pixels with the original alpha, tinted by AppKit.
+		Template bool `json:"template"`
+	} `json:"linux"`
+
+	Windows struct {
+		// Physical pixels; the first is the bitmap fallback's primary size.
+		Sizes []int `json:"sizes"`
+
+		// Transparent inset as a fraction of the square canvas.
+		Padding float64 `json:"padding"`
+
+		// macOS only: black pixels with the original alpha, tinted by AppKit.
+		Template bool `json:"template"`
+	} `json:"windows"`
+
+	Darwin struct {
+		// Physical pixels; the first is the bitmap fallback's primary size.
+		Sizes []int `json:"sizes"`
+
+		// Transparent inset as a fraction of the square canvas.
+		Padding float64 `json:"padding"`
+
+		// macOS only: black pixels with the original alpha, tinted by AppKit.
+		Template bool `json:"template"`
+	} `json:"darwin"`
 }
 
 type Theme struct {
 	Source string `json:"source"`
 
-	// per-state source overrides for this theme (highest precedence)
+	// Per-state source overrides, before platform and size overrides.
 	StateSources map[string]string `json:"stateSources,omitempty"`
 
 	// per-theme color overrides: state -> slot -> color
 	Colors map[string]map[string]string `json:"colors,omitempty"`
+
+	// Platform and pixel-size artwork overrides, relative to the config.
+	Platforms map[string]Sources `json:"platforms,omitempty"`
+}
+
+type Sources struct {
+	Source string `json:"source,omitempty"`
+
+	StateSources map[string]string `json:"stateSources,omitempty"`
+
+	SizeSources map[string]string `json:"sizeSources,omitempty"`
 }
 
 type State struct {
@@ -43,4 +92,23 @@ type State struct {
 	// source swaps the base SVG for this state (all themes, unless a
 	// theme's stateSources overrides it)
 	Source string `json:"source,omitempty"`
+}
+
+type AppIcon struct {
+	// source is relative to the config file, like the themes' sources.
+	Source string `json:"source"`
+
+	// sizes in px; the first is embedded as AppIcon and gets the bare file name.
+	Sizes []int `json:"sizes"`
+}
+
+type Platform struct {
+	// Physical pixels; the first is the bitmap fallback's primary size.
+	Sizes []int `json:"sizes"`
+
+	// Transparent inset as a fraction of the square canvas.
+	Padding float64 `json:"padding"`
+
+	// macOS only: black pixels with the original alpha, tinted by AppKit.
+	Template bool `json:"template"`
 }

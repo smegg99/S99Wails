@@ -61,12 +61,21 @@ func GenerateGo(cfg *Config, outDir string) error {
 
 	embedDirs := make([]string, 0, len(cfg.Themes))
 	for _, theme := range cfg.ThemeNames() {
-		embedDirs = append(embedDirs, theme+"/linux-png-fallback")
+		embedDirs = append(embedDirs, theme)
 	}
 	f.Comment("//go:embed " + strings.Join(embedDirs, " "))
 	f.Var().Id("FS").Qual("embed", "FS")
 
-	f.Comment("Icon returns the primary-size PNG for the theme/status combination.")
+	if cfg.AppIcon != nil {
+		f.Comment(fmt.Sprintf("AppIcon is the application icon as a %dpx PNG.", cfg.AppIcon.Sizes[0]))
+		f.Comment("")
+		f.Comment("//go:embed " + appIconDir + "/" + appIconName(cfg.Prefix) + ".png")
+		f.Var().Id("AppIcon").Index().Byte()
+	}
+
+	f.Comment("TemplateIcon reports whether the macOS bitmap is an AppKit template.")
+	f.Const().Id("TemplateIcon").Op("=").Lit(cfg.Platforms.Darwin.Template)
+	f.Comment("Icon returns the native bitmap fallback: Windows ICO or Linux/macOS PNG.")
 	f.Func().Id("Icon").
 		Params(jen.Id("dark").Bool(), jen.Id("status").Id("Status")).
 		Params(jen.Index().Byte(), jen.Error()).
@@ -75,29 +84,37 @@ func GenerateGo(cfg *Config, outDir string) error {
 			jen.If(jen.Id("dark")).Block(
 				jen.Id("theme").Op("=").Lit("dark"),
 			),
+			jen.Id("platform").Op(":=").Lit("linux-png-fallback"),
+			jen.Id("ext").Op(":=").Lit("png"),
+			jen.Switch(jen.Qual("runtime", "GOOS")).Block(
+				jen.Case(jen.Lit("windows")).Block(jen.Id("platform").Op("=").Lit("windows"), jen.Id("ext").Op("=").Lit("ico")),
+				jen.Case(jen.Lit("darwin")).Block(jen.Id("platform").Op("=").Lit("darwin")),
+			),
 			jen.Return(jen.Id("FS").Dot("ReadFile").Call(
 				jen.Qual("fmt", "Sprintf").Call(
-					jen.Lit("%s/linux-png-fallback/"+cfg.Prefix+"-%s-%s.png"),
-					jen.Id("theme"), jen.Id("theme"), jen.Id("status"),
+					jen.Lit("%s/%s/"+cfg.Prefix+"-%s-%s.%s"),
+					jen.Id("theme"), jen.Id("platform"), jen.Id("theme"), jen.Id("status"), jen.Id("ext"),
 				),
 			)),
 		)
 
 	if cfg.TrayAdapter {
-		f.Comment("ForStatus adapts a status to the s99wails tray icon interface:")
-		f.Comment("")
-		f.Comment("\tmanager.SetIcons(ForStatus(StatusError))")
+		f.Type().Id("statusIcons").Struct(jen.Id("status").Id("Status"))
+		f.Func().Params(jen.Id("s").Id("statusIcons")).Id("Icon").Params(jen.Id("dark").Bool()).Params(jen.Index().Byte(), jen.Error()).Block(
+			jen.Return(jen.Id("Icon").Call(jen.Id("dark"), jen.Id("s").Dot("status"))),
+		)
+		f.Func().Params(jen.Id("s").Id("statusIcons")).Id("ThemedIcon").Params(jen.Id("dark").Bool()).Params(jen.Qual("io/fs", "FS"), jen.String(), jen.Error()).Block(
+			jen.Id("theme").Op(":=").Lit("light"),
+			jen.If(jen.Id("dark")).Block(jen.Id("theme").Op("=").Lit("dark")),
+			jen.List(jen.Id("files"), jen.Id("err")).Op(":=").Qual("io/fs", "Sub").Call(jen.Id("FS"), jen.Id("theme").Op("+").Lit("/linux")),
+			jen.Return(jen.Id("files"), jen.Qual("fmt", "Sprintf").Call(jen.Lit(cfg.Prefix+"-%s-%s"), jen.Id("theme"), jen.Id("s").Dot("status")), jen.Id("err")),
+		)
+		f.Comment("ForStatus supplies Linux vectors alongside the native bitmap fallback.")
 		f.Func().Id("ForStatus").
 			Params(jen.Id("status").Id("Status")).
-			Qual("github.com/smegg99/s99wails/v2/shell/tray", "IconsFunc").
+			Qual("github.com/smegg99/s99wails/v2/shell/tray", "ThemedIcons").
 			Block(
-				jen.Return(jen.Func().
-					Params(jen.Id("dark").Bool()).
-					Params(jen.Index().Byte(), jen.Error()).
-					Block(
-						jen.Return(jen.Id("Icon").Call(jen.Id("dark"), jen.Id("status"))),
-					),
-				),
+				jen.Return(jen.Id("statusIcons").Values(jen.Id("status"))),
 			)
 	}
 

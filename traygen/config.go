@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -82,14 +83,70 @@ func (c *Config) check() error {
 				return fmt.Errorf("theme %q stateSources reference unknown state %q", themeName, stateName)
 			}
 		}
+		for platform, sources := range theme.Platforms {
+			profile, ok := c.Platform(platform)
+			if !ok {
+				return fmt.Errorf("theme %q has unknown platform %q", themeName, platform)
+			}
+			for state := range sources.StateSources {
+				if _, ok := c.States[state]; !ok {
+					return fmt.Errorf("theme %q platform %q references unknown state %q", themeName, platform, state)
+				}
+			}
+			for key := range sources.SizeSources {
+				size, err := strconv.Atoi(key)
+				if err != nil || strconv.Itoa(size) != key {
+					return fmt.Errorf("theme %q platform %q has invalid size %q", themeName, platform, key)
+				}
+				found := false
+				for _, configured := range profile.Sizes {
+					found = found || configured == size
+				}
+				if !found {
+					return fmt.Errorf("theme %q platform %q source size %d is not in platforms.%s.sizes", themeName, platform, size, platform)
+				}
+			}
+		}
 	}
 	if len(c.States) == 0 {
 		return fmt.Errorf("at least one state is required")
 	}
-	if len(c.Sizes) == 0 {
-		return fmt.Errorf("at least one size is required")
+	for _, name := range platformNames {
+		profile, _ := c.Platform(name)
+		if len(profile.Sizes) == 0 {
+			return fmt.Errorf("platform %s needs at least one size", name)
+		}
+		seen := map[int]bool{}
+		for _, size := range profile.Sizes {
+			if size < 1 || size > 256 || seen[size] {
+				return fmt.Errorf("platform %s has invalid or duplicate size %d", name, size)
+			}
+			seen[size] = true
+		}
+		if name != "darwin" && profile.Template {
+			return fmt.Errorf("platform %s cannot use a macOS template", name)
+		}
+	}
+	if c.AppIcon != nil && len(c.AppIcon.Sizes) == 0 {
+		return fmt.Errorf("the app icon needs at least one size")
 	}
 	return nil
+}
+
+var platformNames = []string{"linux", "windows", "darwin"}
+
+// Platform returns the configured native tray profile.
+func (c *Config) Platform(name string) (Platform, bool) {
+	switch name {
+	case "linux":
+		return c.Platforms.Linux, true
+	case "windows":
+		return c.Platforms.Windows, true
+	case "darwin":
+		return c.Platforms.Darwin, true
+	default:
+		return Platform{}, false
+	}
 }
 
 func (c *Config) StateNames() []string {

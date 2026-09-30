@@ -80,6 +80,6 @@ check-traygen:
     trap 'rm -rf "$tmp"' EXIT
     (cd "{{justfile_directory()}}/examples" \
         && go tool traygen -config traygen/trayicons.cue -out "$tmp" >/dev/null)
-    for item in dark light icons_gen.go preview.png; do
+    for item in dark light icons_gen.go preview.png preview-linux.png preview-windows.png preview-darwin.png; do
         diff -ru "{{justfile_directory()}}/examples/traygen/$item" "$tmp/$item"
     done

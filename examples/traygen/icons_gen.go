@@ -6,6 +6,8 @@ import (
 	"embed"
 	"fmt"
 	"github.com/smegg99/s99wails/v2/shell/tray"
+	"io/fs"
+	"runtime"
 )
 
 // Status selects a pregenerated tray icon state.
@@ -17,23 +19,47 @@ const (
 	StatusRunning Status = "running"
 )
 
-//go:embed dark/linux-png-fallback light/linux-png-fallback
+//go:embed dark light
 var FS embed.FS
 
-// Icon returns the primary-size PNG for the theme/status combination.
+// TemplateIcon reports whether the macOS bitmap is an AppKit template.
+const TemplateIcon = false
+
+// Icon returns the native bitmap fallback: Windows ICO or Linux/macOS PNG.
 func Icon(dark bool, status Status) ([]byte, error) {
 	theme := "light"
 	if dark {
 		theme = "dark"
 	}
-	return FS.ReadFile(fmt.Sprintf("%s/linux-png-fallback/example-tray-%s-%s.png", theme, theme, status))
+	platform := "linux-png-fallback"
+	ext := "png"
+	switch runtime.GOOS {
+	case "windows":
+		platform = "windows"
+		ext = "ico"
+	case "darwin":
+		platform = "darwin"
+	}
+	return FS.ReadFile(fmt.Sprintf("%s/%s/example-tray-%s-%s.%s", theme, platform, theme, status, ext))
 }
 
-// ForStatus adapts a status to the s99wails tray icon interface:
-//
-//	manager.SetIcons(ForStatus(StatusError))
-func ForStatus(status Status) tray.IconsFunc {
-	return func(dark bool) ([]byte, error) {
-		return Icon(dark, status)
+type statusIcons struct {
+	status Status
+}
+
+func (s statusIcons) Icon(dark bool) ([]byte, error) {
+	return Icon(dark, s.status)
+}
+func (s statusIcons) ThemedIcon(dark bool) (fs.FS, string, error) {
+	theme := "light"
+	if dark {
+		theme = "dark"
 	}
+	files, err := fs.Sub(FS, theme+"/linux")
+	return files, fmt.Sprintf("example-tray-%s-%s", theme, s.status), err
+}
+
+// ForStatus supplies Linux vectors alongside the native bitmap fallback.
+func ForStatus(status Status) tray.ThemedIcons {
+	return statusIcons{status}
 }

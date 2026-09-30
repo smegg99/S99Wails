@@ -1,6 +1,9 @@
 prefix: "app-tray"
 slots: ["badge"]
-sizes: [32, 24]
+platforms: {
+	linux: sizes: [32, 24]
+	windows: sizes: [32, 24]
+}
 themes: {
 	dark: source:  "logo-dark.svg"
 	light: source: "logo-light.svg"
