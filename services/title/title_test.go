@@ -3,23 +3,22 @@
 package title
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // recorder replaces the window setter and records applied titles.
 func recorder(s *Service) *[]string {
 	var got []string
-	s.apply = func(text string) { got = append(got, text) }
+	s.apply = func(_ context.Context, text string) { got = append(got, text) }
 	return &got
 }
 
 func TestBaseOnlyUntilAPhraseArrives(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner"})
-	if got := s.Title(); got != "SmeggTuner" {
+	if got := s.Title(t.Context()); got != "SmeggTuner" {
 		t.Fatalf("Title() = %q, want %q", got, "SmeggTuner")
 	}
 }
@@ -28,12 +27,12 @@ func TestSetJoinsBaseAndPhrase(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner"})
 	applied := recorder(s)
 
-	if err := s.Set("tuning Bugari Armando 12/41"); err != nil {
+	if err := s.Set(t.Context(), "tuning Bugari Armando 12/41"); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
 
 	want := "SmeggTuner - tuning Bugari Armando 12/41"
-	if got := s.Title(); got != want {
+	if got := s.Title(t.Context()); got != want {
 		t.Fatalf("Title() = %q, want %q", got, want)
 	}
 	if len(*applied) != 1 || (*applied)[0] != want {
@@ -43,10 +42,10 @@ func TestSetJoinsBaseAndPhrase(t *testing.T) {
 
 func TestCustomSeparator(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner", Sep: " | "})
-	if err := s.Set("settings"); err != nil {
+	if err := s.Set(t.Context(), "settings"); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
-	if got := s.Title(); got != "SmeggTuner | settings" {
+	if got := s.Title(t.Context()); got != "SmeggTuner | settings" {
 		t.Fatalf("Title() = %q", got)
 	}
 }
@@ -55,10 +54,10 @@ func TestEmptyPhraseRestoresTheBareBase(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner"})
 	applied := recorder(s)
 
-	_ = s.Set("workshop")
-	_ = s.Set("")
+	_ = s.Set(t.Context(), "workshop")
+	_ = s.Set(t.Context(), "")
 
-	if got := s.Title(); got != "SmeggTuner" {
+	if got := s.Title(t.Context()); got != "SmeggTuner" {
 		t.Fatalf("Title() = %q, want %q", got, "SmeggTuner")
 	}
 	if len(*applied) != 2 || (*applied)[1] != "SmeggTuner" {
@@ -71,9 +70,9 @@ func TestIdenticalTitleIsNotAppliedTwice(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner"})
 	applied := recorder(s)
 
-	_ = s.Set("tuning")
-	_ = s.Set("tuning")
-	_ = s.Set("tuning")
+	_ = s.Set(t.Context(), "tuning")
+	_ = s.Set(t.Context(), "tuning")
+	_ = s.Set(t.Context(), "tuning")
 
 	if len(*applied) != 1 {
 		t.Fatalf("applied %d times, want 1: %q", len(*applied), *applied)
@@ -84,8 +83,8 @@ func TestDifferentTitlesAreEachApplied(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner"})
 	applied := recorder(s)
 
-	_ = s.Set("tuning")
-	_ = s.Set("workshop")
+	_ = s.Set(t.Context(), "tuning")
+	_ = s.Set(t.Context(), "workshop")
 
 	if len(*applied) != 2 {
 		t.Fatalf("applied %d times, want 2: %q", len(*applied), *applied)
@@ -94,36 +93,22 @@ func TestDifferentTitlesAreEachApplied(t *testing.T) {
 
 func TestNilWindowIsANoOp(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner"})
-	if err := s.Set("tuning"); err != nil {
+	if err := s.Set(t.Context(), "tuning"); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
 
-	// A provider that is called - the window is not ready yet - and returns
-	// nil rather than a *application.WebviewWindow. This is the case the
-	// Options.Window doc comment promises safety for: "one returning nil".
-	called := false
-	s = New(Options{Base: "SmeggTuner", Window: func() *application.WebviewWindow {
-		called = true
-		return nil
-	}})
-	if err := s.Set("tuning"); err != nil {
-		t.Fatalf("Set with provider returning nil: %v", err)
-	}
-	if !called {
-		t.Fatalf("provider was never invoked")
-	}
 }
 
 func TestNoBaseLeavesThePhraseAlone(t *testing.T) {
 	s := New(Options{})
-	if got := s.Title(); got != "" {
+	if got := s.Title(t.Context()); got != "" {
 		t.Fatalf("Title() = %q, want empty", got)
 	}
 
-	if err := s.Set("tuning"); err != nil {
+	if err := s.Set(t.Context(), "tuning"); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
-	if got := s.Title(); got != "tuning" {
+	if got := s.Title(t.Context()); got != "tuning" {
 		t.Fatalf("Title() = %q, want %q", got, "tuning")
 	}
 }
@@ -143,7 +128,7 @@ func TestBaseFallbackIsRetriedNotLatched(t *testing.T) {
 
 	s := New(Options{})
 
-	if got := s.Title(); got != "" {
+	if got := s.Title(t.Context()); got != "" {
 		t.Fatalf("Title() before an application exists = %q, want empty", got)
 	}
 	if calls == 0 {
@@ -152,21 +137,21 @@ func TestBaseFallbackIsRetriedNotLatched(t *testing.T) {
 
 	// The application name becomes available after construction.
 	name = "SmeggTuner"
-	if got := s.Title(); got != "SmeggTuner" {
+	if got := s.Title(t.Context()); got != "SmeggTuner" {
 		t.Fatalf("Title() once an application exists = %q, want %q; the fallback was latched empty at construction", got, "SmeggTuner")
 	}
 
-	if err := s.Set("tuning"); err != nil {
+	if err := s.Set(t.Context(), "tuning"); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
-	if got := s.Title(); got != "SmeggTuner - tuning" {
+	if got := s.Title(t.Context()); got != "SmeggTuner - tuning" {
 		t.Fatalf("Title() = %q, want %q", got, "SmeggTuner - tuning")
 	}
 
 	// Once resolved, the name is cached.
 	callsAfterResolved := calls
 	name = "SomethingElse"
-	if got := s.Title(); got != "SmeggTuner - tuning" {
+	if got := s.Title(t.Context()); got != "SmeggTuner - tuning" {
 		t.Fatalf("Title() = %q, want cached %q", got, "SmeggTuner - tuning")
 	}
 	if calls != callsAfterResolved {
@@ -176,20 +161,20 @@ func TestBaseFallbackIsRetriedNotLatched(t *testing.T) {
 
 func TestConcurrentSetsLeaveAConsistentTitle(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner"})
-	s.apply = func(string) {}
+	s.apply = func(context.Context, string) {}
 
 	var wg sync.WaitGroup
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = s.Set("tuning")
-			_ = s.Title()
+			_ = s.Set(t.Context(), "tuning")
+			_ = s.Title(t.Context())
 		}()
 	}
 	wg.Wait()
 
-	if got := s.Title(); got != "SmeggTuner - tuning" {
+	if got := s.Title(t.Context()); got != "SmeggTuner - tuning" {
 		t.Fatalf("Title() = %q", got)
 	}
 }
@@ -203,7 +188,7 @@ func TestSetIsNotQueuedBehindAnInFlightDispatch(t *testing.T) {
 	release := make(chan struct{})
 	var startedOnce sync.Once
 
-	s.apply = func(text string) {
+	s.apply = func(_ context.Context, text string) {
 		if text == "SmeggTuner - first" {
 			startedOnce.Do(func() { close(started) })
 			<-release
@@ -212,7 +197,7 @@ func TestSetIsNotQueuedBehindAnInFlightDispatch(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		_ = s.Set("first")
+		_ = s.Set(t.Context(), "first")
 		close(done)
 	}()
 
@@ -225,12 +210,12 @@ func TestSetIsNotQueuedBehindAnInFlightDispatch(t *testing.T) {
 	// apply("first") holds applyMu but not mu.
 	writeDone := make(chan struct{})
 	go func() {
-		_ = s.Set("second")
+		_ = s.Set(t.Context(), "second")
 		close(writeDone)
 	}()
 
 	titleResult := make(chan string, 1)
-	go func() { titleResult <- s.Title() }()
+	go func() { titleResult <- s.Title(t.Context()) }()
 	select {
 	case got := <-titleResult:
 		if got != "SmeggTuner - first" && got != "SmeggTuner - second" {
@@ -244,7 +229,7 @@ func TestSetIsNotQueuedBehindAnInFlightDispatch(t *testing.T) {
 	<-done
 	<-writeDone
 
-	if got := s.Title(); got != "SmeggTuner - second" {
+	if got := s.Title(t.Context()); got != "SmeggTuner - second" {
 		t.Fatalf("final Title() = %q, want %q", got, "SmeggTuner - second")
 	}
 }
@@ -257,7 +242,7 @@ func TestConcurrentSetsNeverLeaveTheWindowOlderThanTitle(t *testing.T) {
 
 		var amu sync.Mutex
 		var lastApplied string
-		s.apply = func(text string) {
+		s.apply = func(_ context.Context, text string) {
 			amu.Lock()
 			lastApplied = text
 			amu.Unlock()
@@ -269,7 +254,7 @@ func TestConcurrentSetsNeverLeaveTheWindowOlderThanTitle(t *testing.T) {
 			wg.Add(1)
 			go func(txt string) {
 				defer wg.Done()
-				_ = s.Set(txt)
+				_ = s.Set(t.Context(), txt)
 			}(txt)
 		}
 		wg.Wait()
@@ -278,8 +263,27 @@ func TestConcurrentSetsNeverLeaveTheWindowOlderThanTitle(t *testing.T) {
 		got := lastApplied
 		amu.Unlock()
 
-		if final := s.Title(); got != final {
+		if final := s.Title(t.Context()); got != final {
 			t.Fatalf("attempt %d: last apply() call was %q but final Title() = %q; a stale value won the race", attempt, got, final)
 		}
+	}
+}
+
+func TestDifferentWindowsKeepTheirOwnPhrases(t *testing.T) {
+	type key struct{}
+	s := New(Options{Base: "Goptivum"})
+	s.windowID = func(ctx context.Context) uint { return ctx.Value(key{}).(uint) }
+	got := map[uint]string{}
+	s.apply = func(ctx context.Context, title string) { got[s.windowID(ctx)] = title }
+	first := context.WithValue(t.Context(), key{}, uint(1))
+	second := context.WithValue(t.Context(), key{}, uint(2))
+	_ = s.Set(first, "School")
+	_ = s.Set(second, "Timetable")
+	_ = s.Set(first, "Lessons")
+	if got[1] != "Goptivum - Lessons" || got[2] != "Goptivum - Timetable" {
+		t.Fatalf("crossed titles: %v", got)
+	}
+	if s.Title(second) != got[2] {
+		t.Fatal("read another window's phrase")
 	}
 }

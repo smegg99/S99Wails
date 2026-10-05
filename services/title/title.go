@@ -4,6 +4,7 @@
 package title
 
 import (
+	"context"
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -19,20 +20,14 @@ type Options struct {
 	Base string
 	// Sep joins Base and the phrase. Empty means DefaultSep.
 	Sep string
-	// Window resolves the window whose title is set. A provider rather than a
-	// window because the window is built from the app, and the app is built
-	// with its services. Nil, or returning nil, makes the service inert.
-	Window func() *application.WebviewWindow
 }
 
 // Service methods are safe for concurrent use.
 type Service struct {
-	mu      sync.Mutex
-	base    string
-	sep     string
-	phrase  string
-	applied string
-	dirty   bool // applied means nothing until the first push
+	mu     sync.Mutex
+	base   string
+	sep    string
+	states map[uint]*windowTitle
 
 	fallbackBase string
 
@@ -40,66 +35,83 @@ type Service struct {
 	// span. The holder re-reads state so pushes land in order.
 	applyMu sync.Mutex
 
-	apply func(string) // test seam
+	apply    func(context.Context, string) // test seam
+	windowID func(context.Context) uint
+}
+
+type windowTitle struct {
+	phrase  string
+	applied string
+	dirty   bool
 }
 
 func New(opts Options) *Service {
-	s := &Service{base: opts.Base, sep: opts.Sep}
+	s := &Service{base: opts.Base, sep: opts.Sep, states: map[uint]*windowTitle{}}
 	if s.sep == "" {
 		s.sep = DefaultSep
 	}
-
-	s.apply = func(text string) {
-		if opts.Window == nil {
-			return
+	s.windowID = func(ctx context.Context) uint {
+		if win, ok := ctx.Value(application.WindowKey).(application.Window); ok {
+			return win.ID()
 		}
-		if win := opts.Window(); win != nil {
+		return 0
+	}
+	s.apply = func(ctx context.Context, text string) {
+		if win, ok := ctx.Value(application.WindowKey).(application.Window); ok {
 			win.SetTitle(text)
 		}
 	}
-
 	return s
+}
+
+func (s *Service) stateLocked(id uint) *windowTitle {
+	if s.states[id] == nil {
+		s.states[id] = &windowTitle{}
+	}
+	return s.states[id]
 }
 
 // Set replaces the phrase after the base name; empty shows the base alone. The
 // error is always nil and exists for the generated binding.
-func (s *Service) Set(text string) error {
+func (s *Service) Set(ctx context.Context, text string) error {
 	s.mu.Lock()
-	s.phrase = text
+	id := s.windowID(ctx)
+	s.stateLocked(id).phrase = text
 	s.mu.Unlock()
 
 	s.applyMu.Lock()
 	defer s.applyMu.Unlock()
 
 	s.mu.Lock()
-	resolved := s.resolveLocked()
-	if s.dirty && resolved == s.applied {
+	state := s.stateLocked(id)
+	resolved := s.resolveLocked(state)
+	if state.dirty && resolved == state.applied {
 		s.mu.Unlock()
 		return nil
 	}
-	s.applied = resolved
-	s.dirty = true
+	state.applied = resolved
+	state.dirty = true
 	s.mu.Unlock()
 
-	s.apply(resolved)
+	s.apply(ctx, resolved)
 	return nil
 }
 
-func (s *Service) Title() string {
+func (s *Service) Title(ctx context.Context) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.resolveLocked()
+	return s.resolveLocked(s.stateLocked(s.windowID(ctx)))
 }
 
-func (s *Service) resolveLocked() string {
+func (s *Service) resolveLocked(state *windowTitle) string {
 	base := s.resolveBaseLocked()
 	switch {
-	case s.phrase == "":
+	case state.phrase == "":
 		return base
 	case base == "":
-		return s.phrase
+		return state.phrase
 	default:
-		return base + s.sep + s.phrase
+		return base + s.sep + state.phrase
 	}
 }
 
