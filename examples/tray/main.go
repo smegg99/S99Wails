@@ -42,7 +42,7 @@ func main() {
 		})
 		return menu
 	})
-	tray.OnClickToggle(systemTray, window)
+	tray.OnClick(systemTray, func() { tray.Toggle(window) })
 	tray.CloseToTray(window, func() bool { return true }, quitting.Load)
 
 	if err := app.Run(); err != nil {

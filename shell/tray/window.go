@@ -32,16 +32,14 @@ func Toggle(win *application.WebviewWindow) {
 	Show(win)
 }
 
-// OnClickToggle makes a left click on the tray icon toggle the window,
-// working around the Wails v3 alpha behavior on Linux where the DBus menu
-// "opened" event fires the normal click handler (which would make
-// right-clicking the tray icon toggle the window too).
-func OnClickToggle(tray *application.SystemTray, win *application.WebviewWindow) {
+// OnClick installs the left-click action. On Linux, Wails also calls the click
+// handler when the DBus menu opens; those calls are ignored.
+func OnClick(tray *application.SystemTray, action func()) {
 	tray.OnClick(func() {
 		if isLinuxTrayMenuOpenCallback() {
 			return
 		}
-		Toggle(win)
+		action()
 	})
 }
 

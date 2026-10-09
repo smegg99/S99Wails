@@ -8,7 +8,6 @@ package main
 import (
 	"embed"
 	_ "embed"
-	"encoding/json"
 	"io/fs"
 	"log"
 	"os"
@@ -73,7 +72,7 @@ func main() {
 	})
 
 	// Persist window geometry across runs next to the binary.
-	if _, err := windowstate.Manage(window, jsonFileStore("windowstate.json"), windowstate.Options{}); err != nil {
+	if _, err := windowstate.Manage(window, windowstate.FileStore("windowstate.json"), windowstate.Options{}); err != nil {
 		log.Println("window state:", err)
 	}
 
@@ -102,7 +101,7 @@ func main() {
 		})
 		return menu
 	})
-	tray.OnClickToggle(systemTray, window)
+	tray.OnClick(systemTray, func() { tray.Toggle(window) })
 	tray.CloseToTray(window, func() bool { return true }, quitting.Load)
 
 	stopThemeWatcher := themeservice.RegisterThemeWatcher(app)
@@ -111,31 +110,4 @@ func main() {
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-// jsonFileStore is the smallest possible windowstate.Store: one JSON file.
-// Real apps typically back the Store with their config instead.
-type jsonFileStore string
-
-func (f jsonFileStore) Load() (windowstate.State, bool, error) {
-	var state windowstate.State
-	data, err := os.ReadFile(string(f))
-	if os.IsNotExist(err) {
-		return state, false, nil
-	}
-	if err != nil {
-		return state, false, err
-	}
-	if err := json.Unmarshal(data, &state); err != nil {
-		return state, false, err
-	}
-	return state, true, nil
-}
-
-func (f jsonFileStore) Save(state windowstate.State) error {
-	data, err := json.Marshal(state)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(string(f), data, 0o644)
 }
