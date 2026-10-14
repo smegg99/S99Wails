@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "types": [],
     "paths": {
+      "@smegg99/s99ab/tabs": ["../S99AB/web/src/tabs.ts"],
       "@smegg99/s99ab/appearance": [
         "../S99AB/web/src/appearance.ts"
       ]
