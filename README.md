@@ -21,6 +21,9 @@ extracted once, so the next app imports it instead. Pairs well with
 - `platform/accent`: OS accent color and dark/light scheme, with a change watcher.
   Linux (XDG portal), Windows (registry), macOS (defaults). No Wails
   dependency.
+- `platform/notify`: lazy Linux notification transport shared by native callers;
+  failures remain errors, and the next send reconnects. Other platforms return
+  `errors.ErrUnsupported`.
 - `platform/autostart`: launch on login, per user, no elevation. XDG `.desktop`,
   registry Run key, LaunchAgent.
 - `platform/env`: WebKitGTK DMABUF workaround, AppImage detection, opt-in X11
@@ -36,6 +39,11 @@ extracted once, so the next app imports it instead. Pairs well with
 - `shell/window`: resize limits written onto `application.WebviewWindowOptions` in
   one call. GTK's Wayland backend ignores min/max size, so they bind only
   under X11/XWayland; pair them with `env.PreferX11OnPlasmaWayland`.
+- `shell/windows`: account-scoped native workspaces, acknowledged tab transfers,
+  close/quit barriers, geometry clamping and X11 cross-window pointer drag.
+  The app supplies persistence and view payloads. See [USAGE](USAGE.md#native-workspaces).
+- `shell/editkeys` and `shell/mousenav`: edit shortcuts and mouse navigation
+  events addressed to the window that received the input.
 - `shell/windowstate`: window geometry persisted across runs behind a two-method
   Store interface.
 - `services/{browser,logger,theme,title}`: Wails-bound services with typed TS
@@ -44,7 +52,8 @@ extracted once, so the next app imports it instead. Pairs well with
   over a unix socket (no port, no CORS) and flushes Server-Sent Events as they
   arrive.
 - `traygen`: pregenerates tray icons per theme and state from labeled SVGs
-  plus a CUE config, with typed Go accessors.
+  plus a CUE config, with typed Go accessors, and optionally the app's own
+  icon as an embedded PNG.
 - `frontendgen`: emits the Vue composables (runtime detection, locale
   sync, system theme, log bridge, window title) into your app's frontend
   tree, no npm packaging.
@@ -94,8 +103,11 @@ under `shell/`, and the import path carries the `/v2` suffix. `traygen` is a
 separate module; the code it emits imports `shell/tray`, so it also carries the
 suffix and is tagged `traygen/v2.0.0`.
 
-The module pins `wails/v3 v3.0.0-beta.16`. Wails v3 is beta; keep your app on
-the same version and bump both together. On Linux, build with `-tags gtk3`
+The module pins `wails/v3 v3.0.0-beta.20` and currently uses the sibling
+`../wails/v3` fork for native Linux `SetThemedIcon` support. Consumers must
+include that replacement too; dependency replacements do not propagate.
+Tagging S99Wails needs an upstream release or a published fork.
+On Linux, build with `-tags gtk3`
 (WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many GPU setups.
 
 After v1.0.4 this module also requires
@@ -111,6 +123,7 @@ replace (
 	github.com/smegg99/s99wails/v2 => ../S99Wails
 	github.com/smegg99/s99wails/traygen/v2 => ../S99Wails/traygen
 	github.com/smegg99/s99ab => ../S99AB
+	github.com/wailsapp/wails/v3 => ../wails/v3
 )
 ```
 
@@ -124,6 +137,7 @@ locales, _ := locale.New(localeDir, "en")
 systemTray := app.SystemTray.New()
 manager := tray.NewManager(systemTray, tray.Options{
     Icons:   trayicons.ForStatus(trayicons.StatusIdle), // traygen output, or your own IconsFunc
+    TemplateIcon: trayicons.TemplateIcon,
     Tooltip: func() string { return locales.T("tray.tooltip") },
 })
 manager.RegisterEvents(app)
@@ -136,7 +150,7 @@ manager.SetMenu(func() *application.Menu {
 })
 locales.OnChange(manager.RebuildMenu)
 
-tray.OnClickToggle(systemTray, window)
+tray.OnClick(systemTray, func() { tray.Toggle(window) })
 tray.CloseToTray(window, func() bool { return cfg.CloseToTray }, quitting.Load)
 ```
 
@@ -154,6 +168,13 @@ traygen: declare states in `trayicons.cue`, label recolorable elements in
 your SVGs with `inkscape:label`, and one icon per theme and state comes
 out, plus typed accessors. Rendering is resvg in wasm: no system
 dependencies, deterministic output.
+
+Linux publishes SVGs by native icon-theme name, with PNG pixmaps available
+for hosts that cannot resolve SVGs. Windows gets a multi-resolution ICO;
+macOS gets a menu-bar PNG with a Retina-sized primary and optional template
+tinting. Artwork stays centered, keeps its aspect ratio and receives a
+platform-specific transparent inset. See [USAGE.md](USAGE.md#tray-artwork)
+for sizes, separate hand-editable sources and native-size preview sheets.
 
 ```cue
 prefix: "app-tray"
@@ -174,6 +195,24 @@ states: {
 
 // switch states at runtime:
 manager.SetIcons(trayicons.ForStatus(trayicons.StatusError))
+```
+
+An optional `appIcon` block renders one more SVG as is, with no themes and
+no states, for the window and the taskbar. The first size is embedded as
+`AppIcon`; the others are written beside it as `<prefix>-app-<N>px.png`.
+Wails on Linux takes PNG bytes here, not SVG. `appicon/` under `-out` is
+generated and removed on every run, so keep the source elsewhere; traygen
+refuses a source inside it.
+
+```cue
+appIcon: {
+    source: "app-icon.svg" // relative to trayicons.cue
+    sizes: [256]           // the default
+}
+```
+
+```go
+application.New(application.Options{Icon: trayicons.AppIcon})
 ```
 
 frontendgen: the Vue composables ship the same way. The emitted files
