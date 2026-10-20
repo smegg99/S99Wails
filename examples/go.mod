@@ -7,7 +7,7 @@ require (
 	github.com/smegg99/s99config v1.0.1
 	github.com/smegg99/s99logger v1.1.0
 	github.com/smegg99/s99wails/v2 v2.0.0
-	github.com/wailsapp/wails/v3 v3.0.0-beta.20
+	github.com/wailsapp/wails/v3 v3.0.0-beta.34
 )
 
 require (
@@ -25,7 +25,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
 	github.com/kanrichan/resvg-go v0.0.1 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/parsers/toml/v2 v2.2.2 // indirect
@@ -48,11 +47,11 @@ require (
 	github.com/zalando/go-keyring v0.2.8 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/image v0.45.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
 
@@ -64,5 +63,4 @@ tool (
 replace (
 	github.com/smegg99/s99wails/traygen/v2 => ../traygen
 	github.com/smegg99/s99wails/v2 => ../
-	github.com/wailsapp/wails/v3 => ../../wails/v3
 )

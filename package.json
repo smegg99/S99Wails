@@ -13,7 +13,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@wailsio/runtime": "3.0.0-beta.16",
+    "@wailsio/runtime": "3.0.0-beta.34",
     "eslint": "^10.9.1",
     "globals": "^17.12.0",
     "typescript": "^5.9.3",

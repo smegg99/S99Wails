@@ -2,16 +2,14 @@ module github.com/smegg99/s99wails/v2
 
 go 1.27
 
-replace github.com/wailsapp/wails/v3 => ../wails/v3
-
 require (
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/smegg99/s99ab v1.6.1
 	github.com/smegg99/s99logger v1.1.0
-	github.com/wailsapp/wails/v3 v3.0.0-beta.20
-	golang.org/x/sys v0.47.0
-	golang.org/x/text v0.41.0
+	github.com/wailsapp/wails/v3 v3.0.0-beta.34
+	golang.org/x/sys v0.48.0
+	golang.org/x/text v0.42.0
 )
 
 require (

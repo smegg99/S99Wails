@@ -5,8 +5,7 @@ package window
 
 import "github.com/wailsapp/wails/v3/pkg/application"
 
-// Limits are resize constraints; a zero field is unset. GTK's Wayland backend
-// ignores them, so pair with env.PreferX11OnPlasmaWayland on Plasma Wayland.
+// Limits are resize constraints; a zero field is unset.
 type Limits struct {
 	MinWidth  int
 	MinHeight int
