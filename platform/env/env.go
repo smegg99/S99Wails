@@ -10,20 +10,6 @@ import (
 	"strings"
 )
 
-// ApplyLinuxWebkitWorkarounds disables the WebKitGTK DMABUF renderer unless the
-// user set it; inside an AppImage it is forced and appImage is true.
-func ApplyLinuxWebkitWorkarounds() (appImage bool) {
-	if runtime.GOOS == "linux" {
-		setDefault("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
-	}
-
-	if LaunchedViaAppImage() {
-		os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
-		return true
-	}
-	return false
-}
-
 // LaunchedViaAppImage reports whether the process is running inside an AppImage.
 func LaunchedViaAppImage() bool {
 	if os.Getenv("APPIMAGE") != "" || os.Getenv("APPDIR") != "" {
@@ -50,9 +36,11 @@ const (
 
 // Options configures Setup. Each field is an independent opt-in.
 type Options struct {
-	// PreferX11 calls PreferX11OnPlasmaWayland.
+	// PreferX11 calls PreferX11OnPlasmaWayland, for GPUs that flicker under Wayland+DMABUF.
 	PreferX11 bool
 
+	// RenderPath picks how composited frames reach the UI process. The zero
+	// value is RenderPathAuto, WebKit's own zero-copy default.
 	RenderPath RenderPath
 
 	// AppImageRenderPath applies inside an AppImage, where the host GPU stack is
@@ -125,8 +113,8 @@ func explicitlySet(key string) bool {
 	return ok
 }
 
-// PreferX11OnPlasmaWayland defaults GDK_BACKEND=x11 on Plasma Wayland, where GTK
-// lacks xdg-decoration and draws unthemed decorations. Reports whether it applied.
+// PreferX11OnPlasmaWayland defaults an unset GDK_BACKEND to x11 on Plasma Wayland and reports
+// whether it applied. Under XWayland GTK 3 paints at a fixed 60 Hz and one scale on every monitor.
 func PreferX11OnPlasmaWayland() bool {
 	if runtime.GOOS != "linux" {
 		return false

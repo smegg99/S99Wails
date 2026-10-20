@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	forced := env.ApplyLinuxWebkitWorkarounds()
-	x11 := env.PreferX11OnPlasmaWayland()
+	result := env.Setup(env.Options{})
 
-	fmt.Println("running from AppImage:", env.LaunchedViaAppImage(), "(workaround forced:", forced, ")")
+	fmt.Println("running from AppImage:", result.AppImage)
+	fmt.Println("render path:", result.RenderPath, "selected by:", result.RenderPathFrom)
 	fmt.Println("WEBKIT_DISABLE_DMABUF_RENDERER =", os.Getenv("WEBKIT_DISABLE_DMABUF_RENDERER"))
-	fmt.Println("GDK_BACKEND defaulted to x11:", x11)
+	fmt.Println("GDK_BACKEND defaulted to x11:", result.X11Preferred)
 }
