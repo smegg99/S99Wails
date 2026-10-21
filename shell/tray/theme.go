@@ -10,32 +10,34 @@ import (
 	"path/filepath"
 )
 
-func (m *Manager) applyThemedIcon(icons Icons, dark bool) {
+// applyThemedIcon publishes the SVG theme beside the bitmap, or clears it so
+// the host draws the bitmap.
+func (m *Manager) applyThemedIcon(tray themedBackend, icons Icons, dark bool) {
 	themed, ok := icons.(ThemedIcons)
 	if !ok {
-		m.tray.SetThemedIcon("", "")
+		tray.setThemedIcon("", "")
 		return
 	}
 	files, name, err := themed.ThemedIcon(dark)
 	if err != nil {
-		m.tray.SetThemedIcon("", "")
-		m.errorf(err)
+		tray.setThemedIcon("", "")
+		m.opts.report(err)
 		return
 	}
 	if m.themeDir == "" {
 		m.themeDir, err = os.MkdirTemp("", fmt.Sprintf("s99wails-tray-%d-", os.Getpid()))
 		if err != nil {
-			m.tray.SetThemedIcon("", "")
-			m.errorf(err)
+			tray.setThemedIcon("", "")
+			m.opts.report(err)
 			return
 		}
 	}
 	if err := writeTheme(files, m.themeDir); err != nil {
-		m.tray.SetThemedIcon("", "")
-		m.errorf(err)
+		tray.setThemedIcon("", "")
+		m.opts.report(err)
 		return
 	}
-	m.tray.SetThemedIcon(m.themeDir, name)
+	tray.setThemedIcon(m.themeDir, name)
 }
 
 func writeTheme(files fs.FS, dir string) error {

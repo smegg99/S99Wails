@@ -35,7 +35,7 @@ var icon []byte
 var assetsFS embed.FS
 
 func main() {
-	env.ApplyLinuxWebkitWorkarounds()
+	env.Setup(env.Options{})
 
 	localeDir, err := fs.Sub(localesFS, "locales")
 	if err != nil {
@@ -76,10 +76,10 @@ func main() {
 		log.Println("window state:", err)
 	}
 
-	systemTray := app.SystemTray.New()
-	manager := tray.NewManager(systemTray, tray.Options{
+	manager := tray.NewManager(app, tray.Options{
 		Icons:              tray.IconsFunc(func(dark bool) ([]byte, error) { return icon, nil }),
 		Tooltip:            func() string { return locales.T("app.name") },
+		OnClick:            func() { tray.Toggle(window) },
 		ThemeChangedEvents: []string{themeservice.EventThemeChanged},
 	})
 	manager.RegisterEvents(app)
@@ -91,17 +91,16 @@ func main() {
 	// Wails event listeners fire on different goroutines, so the quit flag
 	// shared between the tray menu and the closing hook must be atomic.
 	var quitting atomic.Bool
-	manager.SetMenu(func() *application.Menu {
-		menu := app.NewMenu()
-		menu.Add(locales.T("tray.show")).OnClick(func(_ *application.Context) { tray.Show(window) })
-		menu.AddSeparator()
-		menu.Add(locales.T("tray.quit")).OnClick(func(_ *application.Context) {
-			quitting.Store(true)
-			app.Quit()
-		})
-		return menu
+	manager.SetMenu(func() []tray.Item {
+		return []tray.Item{
+			{Label: locales.T("tray.show"), OnClick: func() { tray.Show(window) }},
+			{Separator: true},
+			{Label: locales.T("tray.quit"), OnClick: func() {
+				quitting.Store(true)
+				app.Quit()
+			}},
+		}
 	})
-	tray.OnClick(systemTray, func() { tray.Toggle(window) })
 	tray.CloseToTray(window, func() bool { return true }, quitting.Load)
 
 	stopThemeWatcher := themeservice.RegisterThemeWatcher(app)

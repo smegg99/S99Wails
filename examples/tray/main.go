@@ -23,26 +23,25 @@ func main() {
 		Title: "tray example", Width: 480, Height: 320,
 	})
 
-	systemTray := app.SystemTray.New()
-	manager := tray.NewManager(systemTray, tray.Options{
+	manager := tray.NewManager(app, tray.Options{
 		Icons:   tray.IconsFunc(func(dark bool) ([]byte, error) { return icon, nil }),
 		Tooltip: func() string { return "tray example" },
+		OnClick: func() { tray.Toggle(window) },
 	})
 	manager.RegisterEvents(app)
 	defer manager.Close()
 
 	var quitting atomic.Bool
-	manager.SetMenu(func() *application.Menu {
-		menu := app.NewMenu()
-		menu.Add("Show").OnClick(func(_ *application.Context) { tray.Show(window) })
-		menu.AddSeparator()
-		menu.Add("Quit").OnClick(func(_ *application.Context) {
-			quitting.Store(true)
-			app.Quit()
-		})
-		return menu
+	manager.SetMenu(func() []tray.Item {
+		return []tray.Item{
+			{Label: "Show", OnClick: func() { tray.Show(window) }},
+			{Separator: true},
+			{Label: "Quit", OnClick: func() {
+				quitting.Store(true)
+				app.Quit()
+			}},
+		}
 	})
-	tray.OnClick(systemTray, func() { tray.Toggle(window) })
 	tray.CloseToTray(window, func() bool { return true }, quitting.Load)
 
 	if err := app.Run(); err != nil {

@@ -1,13 +1,12 @@
 // shell/tray/tray.go
 
-// Package tray wraps the Wails v3 system tray with theme-aware icons and rebuildable menus.
+// Package tray is a theme-aware tray icon with rebuildable menus; on Linux a StatusNotifierItem.
 package tray
 
 import (
 	"bytes"
 	"io/fs"
 	"os"
-	"runtime"
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -33,39 +32,73 @@ type IconsFunc func(dark bool) ([]byte, error)
 
 func (f IconsFunc) Icon(dark bool) ([]byte, error) { return f(dark) }
 
+// Item is one tray menu entry: a labelled action, or a separator line.
+type Item struct {
+	Label     string
+	Separator bool
+	OnClick   func()
+}
+
 // Options configures a Manager.
 type Options struct {
 	Icons Icons
 	// TemplateIcon asks macOS to tint black-and-transparent bitmap artwork.
 	TemplateIcon bool
-	// Tooltip supplies the (localized) tray tooltip. It is applied when set
-	// and re-applied on every RebuildMenu, so locale changes pick it up.
+	// Tooltip is re-applied on every RebuildMenu, so locale changes pick it up.
 	Tooltip func() string
-	// OnError receives icon-loading failures and recovered panics from the
-	// apply loop. Optional; errors are dropped when nil.
+	// OnClick runs on a primary click; the secondary click opens the menu.
+	OnClick func()
+	// OnError receives icon, bus and menu failures and recovered panics.
+	// Optional; errors are dropped when nil.
 	OnError func(error)
 	// ThemeChangedEvents lists extra custom events that trigger dark-mode
 	// re-detection, such as theme.EventThemeChanged.
 	ThemeChangedEvents []string
 }
 
-// Manager drives the tray icon from the OS theme. Methods are safe for
+func (o Options) report(err error) {
+	if err != nil && o.OnError != nil {
+		o.OnError(err)
+	}
+}
+
+// backend is the platform tray the Manager drives.
+type backend interface {
+	setIcon(icon []byte) error
+	setTooltip(text string)
+	setMenu(items []Item)
+	close()
+}
+
+// themedBackend is a tray the desktop can draw from an icon theme by name.
+type themedBackend interface {
+	setThemedIcon(themePath, name string)
+}
+
+// Manager drives the tray icon, tooltip and menu. Methods are safe for
 // concurrent use; icon updates are serialized and coalesced by applyLoop.
 type Manager struct {
-	tray *application.SystemTray
+	tray backend
 	opts Options
 
 	mu        sync.Mutex
+	icons     Icons
 	dark      bool
 	closed    bool
-	buildMenu func() *application.Menu
+	buildMenu func() []Item
 	lastIcon  []byte
 	themeDir  string
 
 	pendingApply chan struct{}
 }
 
-func NewManager(tray *application.SystemTray, opts Options) *Manager {
+// NewManager creates the tray and sets its first icon from the detected OS
+// theme. app names the Linux StatusNotifierItem and owns the tray elsewhere.
+func NewManager(app *application.App, opts Options) *Manager {
+	return start(newPlatform(app, opts), opts)
+}
+
+func start(tray backend, opts Options) *Manager {
 	dark := false
 	if d, ok := accent.DetectDarkMode(); ok {
 		dark = d
@@ -73,6 +106,7 @@ func NewManager(tray *application.SystemTray, opts Options) *Manager {
 	m := &Manager{
 		tray:         tray,
 		opts:         opts,
+		icons:        opts.Icons,
 		dark:         dark,
 		pendingApply: make(chan struct{}, 1),
 	}
@@ -82,7 +116,8 @@ func NewManager(tray *application.SystemTray, opts Options) *Manager {
 	return m
 }
 
-// Close stops the apply goroutine. The Manager must not be used afterwards.
+// Close stops the apply goroutine and takes the Linux item off the bus. The
+// Manager must not be used afterwards.
 func (m *Manager) Close() {
 	m.mu.Lock()
 	if m.closed {
@@ -96,7 +131,7 @@ func (m *Manager) Close() {
 
 // SetMenu stores the menu builder and applies it. Call RebuildMenu after a
 // locale change to re-run the builder with newly localized strings.
-func (m *Manager) SetMenu(build func() *application.Menu) {
+func (m *Manager) SetMenu(build func() []Item) {
 	m.mu.Lock()
 	m.buildMenu = build
 	m.mu.Unlock()
@@ -105,14 +140,11 @@ func (m *Manager) SetMenu(build func() *application.Menu) {
 
 // RebuildMenu re-runs the stored menu builder and swaps the tray menu.
 func (m *Manager) RebuildMenu() {
-	if m.tray == nil {
-		return
-	}
 	m.mu.Lock()
 	build := m.buildMenu
 	m.mu.Unlock()
 	if build != nil {
-		m.tray.SetMenu(build())
+		m.tray.setMenu(build())
 	}
 	m.applyTooltip()
 }
@@ -120,18 +152,15 @@ func (m *Manager) RebuildMenu() {
 // SetIcons swaps the icon set, for example from a traygen ForStatus adapter.
 func (m *Manager) SetIcons(icons Icons) {
 	m.mu.Lock()
-	m.opts.Icons = icons
+	m.icons = icons
 	m.lastIcon = nil
 	m.mu.Unlock()
 	m.requestApply()
 }
 
 func (m *Manager) applyTooltip() {
-	if m.tray == nil {
-		return
-	}
 	if m.opts.Tooltip != nil {
-		m.tray.SetTooltip(m.opts.Tooltip())
+		m.tray.setTooltip(m.opts.Tooltip())
 	}
 }
 
@@ -171,12 +200,6 @@ func (m *Manager) RegisterEvents(app *application.App) {
 	}
 }
 
-func (m *Manager) errorf(err error) {
-	if err != nil && m.opts.OnError != nil {
-		m.opts.OnError(err)
-	}
-}
-
 // requestApply coalesces rapid calls into at most one extra refresh.
 func (m *Manager) requestApply() {
 	m.mu.Lock()
@@ -190,16 +213,15 @@ func (m *Manager) requestApply() {
 	}
 }
 
-// applyLoop owns all SetIcon calls.
+// applyLoop owns all icon updates.
 func (m *Manager) applyLoop() {
 	defer func() {
-		if m.themeDir != "" {
-			if err := os.RemoveAll(m.themeDir); err != nil {
-				m.errorf(err)
-			}
-		}
 		if r := recover(); r != nil {
-			m.errorf(recoveredError(r))
+			m.opts.report(recoveredError(r))
+		}
+		m.tray.close()
+		if m.themeDir != "" {
+			m.opts.report(os.RemoveAll(m.themeDir))
 		}
 	}()
 
@@ -211,16 +233,12 @@ func (m *Manager) applyLoop() {
 func (m *Manager) apply() {
 	defer func() {
 		if r := recover(); r != nil {
-			m.errorf(recoveredError(r))
+			m.opts.report(recoveredError(r))
 		}
 	}()
 
-	if m.tray == nil {
-		return
-	}
-
 	m.mu.Lock()
-	icons := m.opts.Icons
+	icons := m.icons
 	dark := m.dark
 	m.mu.Unlock()
 
@@ -230,30 +248,20 @@ func (m *Manager) apply() {
 
 	icon, err := icons.Icon(dark)
 	if err != nil {
-		m.errorf(err)
+		m.opts.report(err)
 		return
 	}
 
-	// SetIcon dispatches to the GUI main thread; skip identical re-applies.
 	m.mu.Lock()
 	same := bytes.Equal(m.lastIcon, icon)
 	if !same {
 		m.lastIcon = icon
 	}
 	m.mu.Unlock()
-	if same {
-		if runtime.GOOS == "linux" {
-			m.applyThemedIcon(icons, dark)
-		}
-		return
+	if !same {
+		m.opts.report(m.tray.setIcon(icon))
 	}
-
-	if runtime.GOOS == "darwin" && m.opts.TemplateIcon {
-		m.tray.SetTemplateIcon(icon)
-	} else {
-		m.tray.SetIcon(icon)
-	}
-	if runtime.GOOS == "linux" {
-		m.applyThemedIcon(icons, dark)
+	if themed, ok := m.tray.(themedBackend); ok {
+		m.applyThemedIcon(themed, icons, dark)
 	}
 }

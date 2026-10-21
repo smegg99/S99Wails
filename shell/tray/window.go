@@ -4,8 +4,6 @@ package tray
 
 import (
 	"fmt"
-	"runtime"
-	"strings"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -32,17 +30,6 @@ func Toggle(win *application.WebviewWindow) {
 	Show(win)
 }
 
-// OnClick installs the left-click action. On Linux, Wails also calls the click
-// handler when the DBus menu opens; those calls are ignored.
-func OnClick(tray *application.SystemTray, action func()) {
-	tray.OnClick(func() {
-		if isLinuxTrayMenuOpenCallback() {
-			return
-		}
-		action()
-	})
-}
-
 // CloseToTray hides the window instead of closing it while enabled() is true.
 // quitting() lets an explicit tray Quit action bypass the hook.
 func CloseToTray(win *application.WebviewWindow, enabled func() bool, quitting func() bool) {
@@ -62,25 +49,4 @@ func recoveredError(r any) error {
 		return err
 	}
 	return fmt.Errorf("panic: %v", r)
-}
-
-// isLinuxTrayMenuOpenCallback reports whether the current call stack
-// originates from the Linux DBus tray menu "opened" event.
-func isLinuxTrayMenuOpenCallback() bool {
-	if runtime.GOOS != "linux" {
-		return false
-	}
-
-	var pcs [16]uintptr
-	n := runtime.Callers(2, pcs[:])
-	for _, pc := range pcs[:n] {
-		fn := runtime.FuncForPC(pc)
-		if fn == nil {
-			continue
-		}
-		if strings.Contains(fn.Name(), "github.com/wailsapp/wails/v3/pkg/application.(*linuxSystemTray).Event") {
-			return true
-		}
-	}
-	return false
 }

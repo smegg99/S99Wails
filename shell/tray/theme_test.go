@@ -1,3 +1,5 @@
+// shell/tray/theme_test.go
+
 package tray
 
 import (
@@ -8,8 +10,6 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
-
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func TestWriteThemePublishesFilesWithoutRewritingUnchangedArtwork(t *testing.T) {
@@ -74,22 +74,47 @@ func (failingThemedIcons) ThemedIcon(bool) (fs.FS, string, error) {
 }
 
 func TestThemeFailureRetainsBitmapAndReportsError(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("Linux icon-theme API")
-	}
 	var reported error
-	m := &Manager{tray: &application.SystemTray{}, opts: Options{Icons: failingThemedIcons{}, OnError: func(err error) { reported = err }}}
+	tray := &fakeTray{}
+	m := &Manager{tray: tray, icons: failingThemedIcons{}, opts: Options{OnError: func(err error) { reported = err }}}
 	defer func() {
 		if m.themeDir != "" {
 			os.RemoveAll(m.themeDir)
 		}
 	}()
 	m.apply()
-	if string(m.lastIcon) != "bitmap" {
+	if string(tray.icon) != "bitmap" {
 		t.Fatal("bitmap fallback was not applied")
+	}
+	if tray.themePath != "" || tray.iconName != "" {
+		t.Fatalf("broken theme published: %q %q", tray.themePath, tray.iconName)
 	}
 	if reported == nil {
 		t.Fatal("invalid SVG theme was not reported")
+	}
+}
+
+type goodThemedIcons struct{}
+
+func (goodThemedIcons) Icon(bool) ([]byte, error) { return []byte("bitmap"), nil }
+func (goodThemedIcons) ThemedIcon(dark bool) (fs.FS, string, error) {
+	name := "app-light"
+	if dark {
+		name = "app-dark"
+	}
+	return fstest.MapFS{name + ".svg": {Data: []byte("<svg/>")}}, name, nil
+}
+
+func TestThemedIconIsWrittenAndPublishedBesideTheBitmap(t *testing.T) {
+	tray := &fakeTray{}
+	m := &Manager{tray: tray, dark: true, icons: goodThemedIcons{}}
+	defer os.RemoveAll(m.themeDir)
+	m.apply()
+	if string(tray.icon) != "bitmap" || tray.iconName != "app-dark" || tray.themePath != m.themeDir {
+		t.Fatalf("published %q %q %q", tray.icon, tray.iconName, tray.themePath)
+	}
+	if _, err := os.Stat(filepath.Join(m.themeDir, "app-dark.svg")); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -98,15 +123,16 @@ func TestCloseRemovesOwnedThemeDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := &Manager{themeDir: dir, pendingApply: make(chan struct{}, 1)}
+	tray := &fakeTray{}
+	m := &Manager{tray: tray, themeDir: dir, pendingApply: make(chan struct{}, 1)}
 	go m.applyLoop()
 	m.Close()
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if _, err := os.Stat(dir); os.IsNotExist(err) && tray.isClosed() {
 			return
 		}
 		time.Sleep(time.Millisecond)
 	}
-	t.Fatal("Close left the owned icon theme behind")
+	t.Fatal("Close left the owned icon theme or the tray behind")
 }
