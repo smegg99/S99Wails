@@ -34,6 +34,10 @@ type Service struct {
 	quitting    bool
 	quitReady   bool
 	quitWaiting map[string]bool
+	// handles name windows for the native Wayland drag (dnd.go).
+	handles     map[string]uintptr
+	handleNames map[uintptr]string
+	nextHandle  uintptr
 }
 
 // Options inject application persistence and account identity. The library
@@ -134,6 +138,29 @@ func Register(s *Service, win *application.WebviewWindow, stop func(), closeToTr
 		}
 		s.requestClose(win.Name())
 	})
+}
+
+// Close starts the calling window's close handshake, as its close button
+// does. Main is refused: its close button hides every window or quits.
+func (s *Service) Close(ctx context.Context, owner string) error {
+	return s.close(CallingName(ctx), owner)
+}
+
+func (s *Service) close(name, owner string) error {
+	if err := s.owns(owner); err != nil {
+		return err
+	}
+	if name == "main" {
+		return ErrWindow
+	}
+	s.mu.Lock()
+	busy := s.quitting || s.closeToken[name] != ""
+	s.mu.Unlock()
+	if busy {
+		return ErrBusy
+	}
+	s.requestClose(name)
+	return nil
 }
 
 func (s *Service) requestClose(name string) {

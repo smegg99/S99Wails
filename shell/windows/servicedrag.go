@@ -2,6 +2,7 @@ package windows
 
 import (
 	"context"
+	"encoding/base64"
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -9,12 +10,67 @@ import (
 
 type nativeDrag struct {
 	id, source, tab string
-	cancel          chan struct{}
+	// face is the page's opaque tab description, passed on with every hover.
+	face   string
+	cancel chan struct{}
+	// image is the page's picture of the dragged tab; version counts its
+	// arrivals, so a follower applies each one once. Both under Service.mu.
+	image   *dragImage
+	version int
+}
+
+// dragImage is a PNG drawn at scale device pixels per logical pixel, held at
+// X, Y logical pixels from its top left corner.
+type dragImage struct {
+	png   []byte
+	scale int
+	x, y  int
+}
+
+// Track tells the source window, while the native drag holds the pointer, whether it
+// is outside or back over the window at X, Y in its own coordinates.
+type Track struct {
+	Inside bool `json:"inside"`
+	X      int  `json:"x"`
+	Y      int  `json:"y"`
 }
 
 func init() {
 	application.RegisterEvent[Drop]("tab:drop")
 	application.RegisterEvent[*Drop]("tab:hover")
+	application.RegisterEvent[Track]("tab:track")
+}
+
+// DragImage hands the native drag the picture it carries outside the source
+// window: a base64 PNG at scale device pixels per logical pixel, held at x, y.
+func (s *Service) DragImage(ctx context.Context, id, png string, scale, x, y int) error {
+	return s.dragImage(CallingName(ctx), id, png, scale, x, y)
+}
+
+func (s *Service) dragImage(source, id, png string, scale, x, y int) error {
+	data, err := base64.StdEncoding.DecodeString(png)
+	if err != nil || len(data) == 0 {
+		return ErrTransfer
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d := s.drag
+	if d == nil || d.id != id || d.source != source {
+		return nil
+	}
+	d.image = &dragImage{png: data, scale: max(scale, 1), x: x, y: y}
+	d.version++
+	return nil
+}
+
+// pendingImage returns the drag's picture when it changed since version seen.
+func (s *Service) pendingImage(d *nativeDrag, seen int) (*dragImage, int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if d.version == seen {
+		return nil, seen
+	}
+	return d.image, d.version
 }
 
 // Strip records client-relative rectangles, not native screen coordinates.
@@ -27,15 +83,18 @@ func (s *Service) Strip(ctx context.Context, strip Strip) {
 	s.strips[CallingName(ctx)] = strip
 }
 
-// BeginDrag follows the native pointer through other webviews and the desktop.
-// False means global coordinates are unavailable (native Wayland).
-func (s *Service) BeginDrag(ctx context.Context, owner, id, tab string) (bool, error) {
+// BeginDrag follows the pointer across windows: the global pointer on X11, GTK drag and
+// drop on Wayland. False means neither is available; face reaches each hover as Drop.Face.
+func (s *Service) BeginDrag(ctx context.Context, owner, id, tab, face string) (bool, error) {
 	if err := s.owns(owner); err != nil {
 		return false, err
 	}
-	var supported bool
-	application.InvokeSync(func() { _, _, _, supported = Pointer() })
-	if !supported {
+	var supported, wayland bool
+	application.InvokeSync(func() {
+		_, _, _, supported = Pointer()
+		wayland = !supported && dndWayland()
+	})
+	if !supported && !wayland {
 		return false, nil
 	}
 	s.mu.Lock()
@@ -44,9 +103,13 @@ func (s *Service) BeginDrag(ctx context.Context, owner, id, tab string) (bool, e
 	if s.owner != owner || s.drag != nil || s.quitting || s.closeToken[name] != "" {
 		return false, ErrBusy
 	}
-	drag := &nativeDrag{id: id, source: name, tab: tab, cancel: make(chan struct{})}
+	drag := &nativeDrag{id: id, source: name, tab: tab, face: face, cancel: make(chan struct{})}
 	s.drag = drag
-	go s.followDrag(drag)
+	if wayland {
+		go s.followWayland(drag)
+	} else {
+		go s.followDrag(drag)
+	}
 	return true, nil
 }
 
@@ -68,7 +131,12 @@ func (s *Service) followDrag(d *nativeDrag) {
 	deadline := time.NewTimer(time.Minute)
 	defer deadline.Stop()
 	lastTarget := ""
+	seen := 0
+	// The page follows the pointer over its own window; past it the floating
+	// picture does, and the page is told to hide its own.
+	overSource := true
 	defer func() {
+		application.InvokeSync(dndClear)
 		if lastTarget != "" {
 			s.registry.Emit(lastTarget, "tab:hover", nil)
 		}
@@ -96,12 +164,21 @@ func (s *Service) followDrag(d *nativeDrag) {
 		}
 		s.mu.Unlock()
 		drop := Drop{ID: d.id, Tab: d.tab, Slot: -1}
-		held, supported := false, false
+		held, supported, over := false, false, false
+		var origin [2]int
+		image, version := s.pendingImage(d, seen)
 		application.InvokeSync(func() {
+			if version != seen && image != nil {
+				dndImage(image.png, image.scale, image.x, image.y)
+			}
 			drop.X, drop.Y, held, supported = Pointer()
 			if !supported {
 				return
 			}
+			if win := native[d.source]; win != nil {
+				origin[0], origin[1], over = Under(win.NativeWindow())
+			}
+			dndFloat(held && !over, drop.X, drop.Y)
 			for name, win := range native {
 				x, y, under := Under(win.NativeWindow())
 				if !under {
@@ -122,8 +199,13 @@ func (s *Service) followDrag(d *nativeDrag) {
 			return
 		default:
 		}
+		seen = version
 		if !supported {
 			return
+		}
+		if held && over != overSource {
+			overSource = over
+			s.registry.Emit(d.source, "tab:track", Track{Inside: over, X: drop.X - origin[0], Y: drop.Y - origin[1]})
 		}
 		if drop.Target != lastTarget && lastTarget != "" {
 			s.registry.Emit(lastTarget, "tab:hover", nil)
@@ -134,6 +216,7 @@ func (s *Service) followDrag(d *nativeDrag) {
 			return
 		}
 		if drop.Target != "" && drop.Target != d.source {
+			drop.Face = d.face
 			s.registry.Emit(drop.Target, "tab:hover", drop)
 		}
 	}
@@ -141,7 +224,10 @@ func (s *Service) followDrag(d *nativeDrag) {
 
 func (s *Service) TearOff(ctx context.Context, owner, tab, payload string, x, y int, positioned bool) (Offer, error) {
 	var geometry *Geometry
-	if positioned {
+	// A Wayland client cannot place a window; the compositor does.
+	var wayland bool
+	application.InvokeSync(func() { wayland = dndWayland() })
+	if positioned && !wayland {
 		geometry = &Geometry{X: x - 100, Y: y - 20, Width: s.options.Width, Height: s.options.Height}
 		for _, screen := range application.Get().Screen.GetAll() {
 			area := screen.WorkArea

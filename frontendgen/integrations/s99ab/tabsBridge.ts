@@ -1,7 +1,7 @@
 // Opaque view transfers between S99AB tab collections and native Wails windows.
 import { Events } from '@wailsio/runtime'
 import { computed, nextTick, onScopeDispose, ref, shallowRef, watch } from 'vue'
-import type { NativeTabDrag, WorkspaceTab, TabWorkspace, TabStripGeometry } from '@smegg99/s99ab/tabs'
+import type { NativeTabDrag, NativeTabFace, NativeTabTrack, WorkspaceTab, TabWorkspace, TabStripGeometry } from '@smegg99/s99ab/tabs'
 import { isWails } from './environment'
 
 export interface WindowInfo { name: string, label: string, ready: boolean }
@@ -14,7 +14,8 @@ export interface WindowOffer {
   payload: unknown
   claimed: boolean
 }
-export interface WindowDrop { id: string, tab: string, target: string, slot: number, x: number, y: number }
+/** face is the source page's NativeTabFace as JSON, on hovers only. */
+export interface WindowDrop { id: string, tab: string, target: string, slot: number, x: number, y: number, face?: string }
 interface TransferPayload<P> { owner: string, value: P }
 
 /** Supply generated bindings; the bridge never imports a consuming app. */
@@ -28,8 +29,10 @@ export interface WindowBindings {
   Released: (id: string) => Promise<void>
   Cancel: (id: string) => Promise<void>
   CloseReady: (token: string, ready: boolean) => Promise<void>
-  BeginDrag: (owner: string, id: string, tab: string) => Promise<boolean>
+  BeginDrag: (owner: string, id: string, tab: string, face: string) => Promise<boolean>
   CancelDrag: (id: string) => Promise<void>
+  DragImage: (id: string, png: string, scale: number, x: number, y: number) => Promise<void>
+  Close: (owner: string) => Promise<void>
   Strip: (geometry: TabStripGeometry) => Promise<void>
 }
 export interface DesktopTabsOptions<T extends WorkspaceTab, P> {
@@ -45,6 +48,8 @@ export interface DesktopTabsOptions<T extends WorkspaceTab, P> {
   blocked: (tab: T) => string | undefined
   errorKey: (error: unknown) => string
   report: (operation: string, error: unknown) => void
+  /** Whether a secondary window left with only pinned tabs by a move closes. */
+  closeEmptied: () => boolean
   /** Event transport can also be injected for host integration tests. */
   events?: (name: string, callback: (event: { data: unknown }) => void) => () => void
 }
@@ -65,6 +70,10 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
   const closing = ref(false)
   const incoming = shallowRef<WindowDrop | null>(null)
   const dragging = ref('')
+  /** Where the native drag, not the page, last saw the pointer of this window's drag. */
+  const track = shallowRef<NativeTabTrack | null>(null)
+  /** The current drag's BeginDrag: its picture is sent only once Go holds the drag. */
+  let begun: Promise<boolean> = Promise.resolve(false)
   const failure = ref('')
   const transfers = new Map<string, string>()
   const pending = shallowRef<Record<string, WindowOffer>>({})
@@ -92,6 +101,7 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
     incoming.value = null
     if (dragging.value) void bindings.CancelDrag(dragging.value)
     dragging.value = ''
+    track.value = null
     failure.value = ''
   })
 
@@ -128,8 +138,13 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
       await bindings.Released(offer.id)
     } catch (err) {
       failure.value = options.errorKey(err)
+      return
     } finally {
       handling.delete(offer.id)
+    }
+    // Only once released: the window cannot close while the offer is open.
+    if (name.value !== 'main' && options.closeEmptied() && ws.tabs.every(tab => tab.pinned)) {
+      await bindings.Close(owner()).catch(err => options.report('window close', err))
     }
   }
 
@@ -181,11 +196,18 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
     })
     listen('tab:done', event => forget(event.data as string))
     listen('tab:hover', event => (incoming.value = event.data as WindowDrop | null))
-    listen('tab:drag-end', () => (dragging.value = ''))
+    listen('tab:track', (event) => {
+      if (dragging.value) track.value = event.data as NativeTabTrack
+    })
+    listen('tab:drag-end', () => {
+      dragging.value = ''
+      track.value = null
+    })
     listen('tab:drop', (event) => {
       const drop = event.data as WindowDrop
       if (drop.id !== dragging.value) return
       dragging.value = ''
+      track.value = null
       const tab = ws.tabs.find(tab => tab.id === drop.tab)
       if (!tab) return
       if (drop.target === name.value) {
@@ -261,12 +283,14 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
     }
   }
 
-  async function beginDrag(tab: T): Promise<boolean> {
+  async function beginDrag(tab: T, face: NativeTabFace): Promise<boolean> {
     if (tab.moving || tab.pinned || closing.value || options.blocked(tab) || !isWails()) return false
     const id = crypto.randomUUID()
     dragging.value = id
+    track.value = null
     try {
-      const supported = await bindings.BeginDrag(owner(), id, tab.id)
+      begun = bindings.BeginDrag(owner(), id, tab.id, JSON.stringify(face))
+      const supported = await begun
       if (dragging.value !== id) {
         await bindings.CancelDrag(id)
         return supported
@@ -281,15 +305,32 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
   function cancelDrag() {
     const id = dragging.value
     dragging.value = ''
+    track.value = null
     if (id) void bindings.CancelDrag(id).catch(err => (failure.value = options.errorKey(err)))
   }
   const dragHooks = computed<NativeTabDrag<T> | undefined>(() => isWails()
     ? {
-        incoming: incoming.value, dragging: dragging.value, closing: closing.value,
+        incoming: incoming.value && { slot: incoming.value.slot, face: readFace(incoming.value.face) }, dragging: dragging.value, closing: closing.value, track: track.value,
         allowed: tab => !options.blocked(tab), beginDrag, cancelDrag,
+        image: (png, scale, x, y) => {
+          const id = dragging.value
+          void begun.catch(() => false).then(supported => supported && dragging.value === id ? bindings.DragImage(id, png, scale, x, y) : undefined)
+            .catch(err => options.report('tab drag image', err))
+        },
         tearOff: (tab) => { void move(tab, '', -1, { x: 0, y: 0, positioned: false }) },
         strip: (geometry) => { void bindings.Strip(geometry).catch(err => options.report('tab strip', err)) },
       }
     : undefined)
   return { name, list, closing, failure, incoming, dragging, dragHooks, cancellable, init, ready, move, retry, cancel, beginDrag, cancelDrag }
+}
+
+/** The face another window sent, or none when it is missing or malformed. */
+function readFace(raw?: string): NativeTabFace | undefined {
+  if (!raw) return undefined
+  try {
+    const face = JSON.parse(raw) as Partial<NativeTabFace> | null
+    return typeof face?.title === 'string' && typeof face.icon === 'string' ? face as NativeTabFace : undefined
+  } catch {
+    return undefined
+  }
 }

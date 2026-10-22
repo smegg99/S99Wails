@@ -19,6 +19,9 @@ type Drop struct {
 	Slot   int    `json:"slot"`
 	X      int    `json:"x"`
 	Y      int    `json:"y"`
+	// Face is what the source page said the tab looks like, so the window it
+	// hovers can draw it in the slot it opens.
+	Face string `json:"face,omitempty"`
 }
 
 // Hit returns an insertion slot, excluding the source tab, or -1 outside.
