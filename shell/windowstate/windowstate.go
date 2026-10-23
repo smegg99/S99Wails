@@ -36,6 +36,7 @@ type Window interface {
 	SetSize(width, height int) application.Window
 	Maximise() application.Window
 	OnWindowEvent(eventType events.WindowEventType, callback func(event *application.WindowEvent)) func()
+	RegisterHook(eventType events.WindowEventType, callback func(event *application.WindowEvent)) func()
 }
 
 // Options configures Track.
@@ -105,8 +106,16 @@ func Track(win Window, store Store, opts Options) (stop func()) {
 	}
 
 	t := &tracker{win: win, store: store, opts: opts}
+	// A first maximise has no live normal bounds; keep the last saved normal geometry.
+	if state, ok, err := store.Load(); err != nil {
+		if opts.OnError != nil {
+			opts.OnError(err)
+		}
+	} else if ok && state.Width > 0 && state.Height > 0 {
+		t.last = state
+	}
 
-	// Seed an un-maximised size; before app.Run the getters report zeros.
+	// Seed live geometry when available; pre-run getters report zeros.
 	t.capture()
 
 	unregister := []func(){
@@ -114,7 +123,8 @@ func Track(win Window, store Store, opts Options) (stop func()) {
 		win.OnWindowEvent(events.Common.WindowDidResize, func(_ *application.WindowEvent) { t.captureAndSchedule() }),
 		win.OnWindowEvent(events.Common.WindowMaximise, func(_ *application.WindowEvent) { t.captureAndPersist() }),
 		win.OnWindowEvent(events.Common.WindowUnMaximise, func(_ *application.WindowEvent) { t.captureAndPersist() }),
-		win.OnWindowEvent(events.Common.WindowClosing, func(_ *application.WindowEvent) { t.captureAndPersist() }),
+		// Closing listeners run concurrently with Wails destruction; hooks run before them.
+		win.RegisterHook(events.Common.WindowClosing, func(_ *application.WindowEvent) { t.captureAndPersist() }),
 	}
 
 	var once sync.Once
@@ -157,15 +167,21 @@ type tracker struct {
 	saveMu sync.Mutex
 }
 
-// capture runs on the GUI thread. Geometry is only taken while un-maximised.
+// capture keeps the last live un-maximised geometry; unavailable native windows report zero size.
 func (t *tracker) capture() {
 	maximised := t.win.IsMaximised()
 
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	if t.stopped {
+		return
+	}
 	if !maximised {
 		x, y := t.win.Position()
 		w, h := t.win.Size()
+		if w <= 0 || h <= 0 {
+			return
+		}
 		t.last = State{X: x, Y: y, Width: w, Height: h}
 	}
 	t.last.Maximised = maximised
@@ -192,6 +208,10 @@ func (t *tracker) captureAndPersist() {
 // persist writes the last captured state. final bypasses the stopped check
 // so the stop flush still runs after stopped is set.
 func (t *tracker) persist(final bool) {
+	// Snapshot and stopped check belong to the serialized save, not its queue time.
+	t.saveMu.Lock()
+	defer t.saveMu.Unlock()
+
 	t.mu.Lock()
 	if t.stopped && !final {
 		t.mu.Unlock()
@@ -199,9 +219,10 @@ func (t *tracker) persist(final bool) {
 	}
 	state := t.last
 	t.mu.Unlock()
+	if state.Width <= 0 || state.Height <= 0 {
+		return
+	}
 
-	t.saveMu.Lock()
-	defer t.saveMu.Unlock()
 	if err := t.store.Save(state); err != nil && t.opts.OnError != nil {
 		t.opts.OnError(err)
 	}

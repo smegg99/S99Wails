@@ -16,10 +16,11 @@ type fakeWindow struct {
 	x, y, w, h int
 	maximised  bool
 	handlers   map[events.WindowEventType][]func(*application.WindowEvent)
+	hooks      map[events.WindowEventType][]func(*application.WindowEvent)
 }
 
 func newFakeWindow() *fakeWindow {
-	return &fakeWindow{x: 10, y: 20, w: 800, h: 600, handlers: map[events.WindowEventType][]func(*application.WindowEvent){}}
+	return &fakeWindow{x: 10, y: 20, w: 800, h: 600, handlers: map[events.WindowEventType][]func(*application.WindowEvent){}, hooks: map[events.WindowEventType][]func(*application.WindowEvent){}}
 }
 
 func (f *fakeWindow) Position() (int, int) { return f.x, f.y }
@@ -40,7 +41,17 @@ func (f *fakeWindow) OnWindowEvent(et events.WindowEventType, cb func(*applicati
 	return func() { f.handlers[et] = nil }
 }
 
+func (f *fakeWindow) RegisterHook(et events.WindowEventType, cb func(*application.WindowEvent)) func() {
+	f.hooks[et] = append(f.hooks[et], cb)
+	return func() { f.hooks[et] = nil }
+}
+
 func (f *fakeWindow) fire(et events.WindowEventType) {
+	for _, cb := range f.hooks[et] {
+		if cb != nil {
+			cb(nil)
+		}
+	}
 	for _, cb := range f.handlers[et] {
 		if cb != nil {
 			cb(nil)
@@ -276,5 +287,75 @@ func TestManageDoesNotTouchGeometryBeforeShow(t *testing.T) {
 
 	if win.w != 1024 || win.h != 768 || win.x != 5 || win.y != 6 || !win.maximised {
 		t.Errorf("state not applied on show: %+v", win.fakeWindow)
+	}
+}
+
+// Wails runs its destruction listener concurrently with other closing listeners.
+func TestCloseHookCapturesBeforeNativeWindowDisappears(t *testing.T) {
+	win := newFakeWindow()
+	store := &memStore{}
+	win.OnWindowEvent(events.Common.WindowClosing, func(*application.WindowEvent) {
+		win.x, win.y, win.w, win.h = 0, 0, 0, 0
+	})
+	stop := Track(win, store, Options{})
+	// A resize whose debounced notification has not arrived yet must still survive close.
+	win.x, win.y, win.w, win.h = 50, 60, 1000, 680
+	win.fire(events.Common.WindowClosing)
+	win.fire(events.Common.WindowDidResize) // queued native event after destruction
+	stop()
+	got, _ := store.snapshot()
+	want := State{X: 50, Y: 60, Width: 1000, Height: 680}
+	if got != want {
+		t.Fatalf("closed geometry = %+v, want %+v", got, want)
+	}
+}
+
+func TestTrackWithoutLiveGeometryPreservesSavedRow(t *testing.T) {
+	for _, maximised := range []bool{false, true} {
+		win := newFakeWindow()
+		win.w, win.h, win.maximised = 0, 0, maximised
+		want := State{X: 20, Y: 30, Width: 1000, Height: 680, Maximised: maximised}
+		store := &memStore{state: want, ok: true}
+		stop := Track(win, store, Options{})
+		stop()
+		if got, saves := store.snapshot(); got != want {
+			t.Fatalf("unavailable geometry overwrote saved row: %+v saves=%d", got, saves)
+		}
+	}
+}
+
+func TestManageRestoredSizeSurvivesCloseWithoutResizeEvent(t *testing.T) {
+	win := newFakeWindow()
+	win.w, win.h = 0, 0 // no native window before Run
+	want := State{X: 50, Y: 60, Width: 1000, Height: 680}
+	store := &memStore{state: want, ok: true}
+	win.OnWindowEvent(events.Common.WindowClosing, func(*application.WindowEvent) {
+		win.x, win.y, win.w, win.h = 0, 0, 0, 0
+	})
+	stop, err := Manage(win, store, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	win.w, win.h = 1100, 720 // created with app defaults
+	win.fire(events.Common.WindowShow)
+	win.fire(events.Common.WindowClosing)
+	stop()
+	if got, _ := store.snapshot(); got != want {
+		t.Fatalf("restored geometry lost: %+v", got)
+	}
+}
+
+func TestTrackSeedsNormalGeometryBeforeFirstMaximise(t *testing.T) {
+	win := newFakeWindow()
+	win.w, win.h = 0, 0 // tracking starts before the native window exists
+	want := State{X: 50, Y: 60, Width: 1000, Height: 680}
+	store := &memStore{state: want, ok: true}
+	stop := Track(win, store, Options{})
+	win.w, win.h, win.maximised = 1920, 1080, true
+	win.fire(events.Common.WindowMaximise) // no earlier resize sample
+	stop()
+	want.Maximised = true
+	if got, _ := store.snapshot(); got != want {
+		t.Fatalf("maximise lost saved normal geometry/flag: %+v, want %+v", got, want)
 	}
 }
