@@ -30,19 +30,25 @@ export function useSystemTheme(options: SystemThemeOptions): { theme: Readonly<R
     return { theme: readonly(theme) }
   }
 
-  void options.getTheme().then((info) => {
-    theme.value = info
-  })
-
+  let receivedEvent = false
+  let disposed = false
   const unsubscribe = Events.On(THEME_CHANGED_EVENT, (event: { data?: unknown }) => {
     const payload = Array.isArray(event.data) ? event.data[0] : event.data
     if (payload) {
+      receivedEvent = true
       theme.value = payload as SystemThemeInfo
     }
   })
 
+  void options.getTheme().then((info) => {
+    if (!receivedEvent && !disposed) theme.value = info
+  })
+
   if (getCurrentInstance()) {
-    onUnmounted(unsubscribe)
+    onUnmounted(() => {
+      disposed = true
+      unsubscribe()
+    })
   }
 
   return { theme: readonly(theme) }
