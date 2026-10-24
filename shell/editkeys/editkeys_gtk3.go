@@ -23,14 +23,18 @@ static gboolean editkeysWatch(void* window, uintptr_t id) {
 static guint editkeysLower(GdkEventKey* event) { return gdk_keyval_to_lower(event->keyval); }
 static gboolean editkeysHas(GdkEventKey* event, guint mask) { return (event->state & mask) != 0; }
 
-// A clipboard nothing owns offers no target at all.
-static gboolean editkeysClipboardEmpty(void) {
-	GtkClipboard* clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-	GdkAtom* targets = NULL;
-	gint count = 0;
-	if (!gtk_clipboard_wait_for_targets(clipboard, &targets, &count)) return TRUE;
-	g_free(targets);
-	return count == 0;
+// GTK passes a failed TARGETS reply as (NULL, -1), which WebKitGTK reads as SIZE_MAX atoms.
+// It becomes an empty list before any handler reads it; GTK never frees the list's one byte.
+static gboolean editkeysTargets(GSignalInvocationHint* hint, guint count, const GValue* values, gpointer data) {
+	GtkSelectionData* selection = count < 2 ? NULL : g_value_get_boxed(&values[1]);
+	if (selection != NULL && gtk_selection_data_get_length(selection) < 0 &&
+	    gtk_selection_data_get_target(selection) == gdk_atom_intern_static_string("TARGETS"))
+		gtk_selection_data_set(selection, GDK_SELECTION_TYPE_ATOM, 32, NULL, 0);
+	return TRUE;
+}
+
+static void editkeysHookTargets(void) {
+	g_signal_add_emission_hook(g_signal_lookup("selection-received", GTK_TYPE_WIDGET), 0, editkeysTargets, NULL, NULL);
 }
 */
 import "C"
@@ -50,14 +54,18 @@ var ErrNoWindow = errors.New("editkeys: no GTK window")
 // a cancellable close request, removes it.
 var windows sync.Map // uint -> *application.WebviewWindow
 
-// Watch sends the window's ctrl+Z and ctrl+shift+Z as Event, and a paste
-// key while the clipboard holds nothing, from the first time it is shown.
+// The targets hook is the whole process's, added with the first window shown.
+var hookTargets sync.Once
+
+// Watch sends the window's ctrl+Z and ctrl+shift+Z as Event once it is shown, and adds,
+// once per process, the hook that turns any failed TARGETS reply into an empty list.
 func Watch(win *application.WebviewWindow, onError func(error)) {
 	windows.Store(win.ID(), win)
 	var once sync.Once
 	win.OnWindowEvent(events.Common.WindowShow, func(*application.WindowEvent) {
 		once.Do(func() {
 			application.InvokeSync(func() {
+				hookTargets.Do(func() { C.editkeysHookTargets() })
 				if C.editkeysWatch(win.NativeWindow(), C.uintptr_t(win.ID())) == 0 {
 					onError(ErrNoWindow)
 				}
@@ -71,15 +79,8 @@ func Watch(win *application.WebviewWindow, onError func(error)) {
 //export editkeysPress
 func editkeysPress(widget *C.GtkWidget, event *C.GdkEventKey, data C.gpointer) C.gboolean {
 	other := C.guint(C.GDK_MOD1_MASK | C.GDK_SUPER_MASK | C.GDK_META_MASK)
-	key, control, shift := uint(C.editkeysLower(event)), C.editkeysHas(event, C.GDK_CONTROL_MASK) != 0, C.editkeysHas(event, C.GDK_SHIFT_MASK) != 0
-	held := C.editkeysHas(event, other) != 0
-	action := actionOf(key, control, shift, held)
-	if pastes(key, control, shift, held) {
-		if C.editkeysClipboardEmpty() == 0 {
-			return C.FALSE
-		}
-		action = "paste"
-	}
+	action := actionOf(uint(C.editkeysLower(event)), C.editkeysHas(event, C.GDK_CONTROL_MASK) != 0,
+		C.editkeysHas(event, C.GDK_SHIFT_MASK) != 0, C.editkeysHas(event, other) != 0)
 	if action == "" {
 		return C.FALSE
 	}
