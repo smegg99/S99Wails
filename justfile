@@ -3,7 +3,11 @@ default:
     @just --list
 
 # Format, vet and test every module, then the TypeScript half.
-check: fmt vet test lint typecheck check-version check-frontendgen check-traygen
+check: fmt vet test test-frontendgen lint typecheck check-version check-frontendgen check-traygen
+
+# Exercise emitted helper behavior without a browser or native runtime.
+test-frontendgen:
+    node --test scripts/test-frontendgen.mjs
 
 # Format the Go files in every module.
 fmt:
