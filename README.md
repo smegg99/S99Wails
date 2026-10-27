@@ -27,23 +27,25 @@ extracted once, so the next app imports it instead. Pairs well with
 - `platform/autostart`: launch on login, per user, no elevation. XDG `.desktop`,
   registry Run key, LaunchAgent.
 - `platform/env`: WebKitGTK DMABUF workaround, AppImage detection, opt-in X11
-  fallback for Plasma Wayland decorations.
+  default for Plasma Wayland sessions.
 - `locale`: go-i18n wrapper for native-side strings with plurals, template
   data, language matching, and an OnChange hook. No Wails dependency. It loads
   the flat JSON `backend` target of [S99Locale](https://github.com/smegg99/S99Locale)
   (`loc build`), which also emits the vue-i18n frontend catalogue from the same
   source; `loc check` keeps the two in step.
 - `shell/tray`: theme-aware tray icon with serialized updates, re-localizable
-  menus, click-to-toggle, and close-to-tray, including the Wails v3
-  workaround for Linux DBus menus.
+  menus, click-to-toggle, and close-to-tray. On Linux it is its own
+  StatusNotifierItem over D-Bus, so the panel draws the SVG icon theme;
+  Windows and macOS use the Wails tray.
 - `shell/window`: resize limits written onto `application.WebviewWindowOptions` in
-  one call. GTK's Wayland backend ignores min/max size, so they bind only
-  under X11/XWayland; pair them with `env.PreferX11OnPlasmaWayland`.
+  one call. They bind on X11 and on Wayland.
 - `shell/windows`: account-scoped native workspaces, acknowledged tab transfers,
-  close/quit barriers, geometry clamping and X11 cross-window pointer drag.
+  close/quit barriers, geometry clamping and cross-window tab drag (X11 pointer, Wayland drag and drop).
   The app supplies persistence and view payloads. See [USAGE](USAGE.md#native-workspaces).
 - `shell/editkeys` and `shell/mousenav`: edit shortcuts and mouse navigation
-  events addressed to the window that received the input.
+  events addressed to the window that received the input. `editkeys.Watch`
+  also keeps WebKitGTK 2.54 from crashing on a paste from a selection nothing
+  owns (X11).
 - `shell/windowstate`: window geometry persisted across runs behind a two-method
   Store interface.
 - `services/{browser,logger,theme,title}`: Wails-bound services with typed TS
@@ -103,12 +105,9 @@ under `shell/`, and the import path carries the `/v2` suffix. `traygen` is a
 separate module; the code it emits imports `shell/tray`, so it also carries the
 suffix and is tagged `traygen/v2.0.0`.
 
-The module pins `wails/v3 v3.0.0-beta.20` and currently uses the sibling
-`../wails/v3` fork for native Linux `SetThemedIcon` support. Consumers must
-include that replacement too; dependency replacements do not propagate.
-Tagging S99Wails needs an upstream release or a published fork.
-On Linux, build with `-tags gtk3`
-(WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many GPU setups.
+The module pins upstream `wails/v3 v3.0.0-beta.34`. On Linux, build with
+`-tags gtk3` (WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many
+GPU setups.
 
 After v1.0.4 this module also requires
 [s99ab](https://github.com/smegg99/S99AB), which is private too. It is pinned
@@ -123,7 +122,6 @@ replace (
 	github.com/smegg99/s99wails/v2 => ../S99Wails
 	github.com/smegg99/s99wails/traygen/v2 => ../S99Wails/traygen
 	github.com/smegg99/s99ab => ../S99AB
-	github.com/wailsapp/wails/v3 => ../wails/v3
 )
 ```
 
@@ -134,23 +132,20 @@ A localized tray with theme-aware icons, wired for locale changes:
 ```go
 locales, _ := locale.New(localeDir, "en")
 
-systemTray := app.SystemTray.New()
-manager := tray.NewManager(systemTray, tray.Options{
+manager := tray.NewManager(app, tray.Options{
     Icons:   trayicons.ForStatus(trayicons.StatusIdle), // traygen output, or your own IconsFunc
     TemplateIcon: trayicons.TemplateIcon,
     Tooltip: func() string { return locales.T("tray.tooltip") },
+    OnClick: func() { tray.Toggle(window) },
 })
 manager.RegisterEvents(app)
 defer manager.Close()
 
-manager.SetMenu(func() *application.Menu {
-    menu := app.NewMenu()
-    menu.Add(locales.T("tray.show")).OnClick(func(_ *application.Context) { tray.Show(window) })
-    return menu
+manager.SetMenu(func() []tray.Item {
+    return []tray.Item{{Label: locales.T("tray.show"), OnClick: func() { tray.Show(window) }}}
 })
 locales.OnChange(manager.RebuildMenu)
 
-tray.OnClick(systemTray, func() { tray.Toggle(window) })
 tray.CloseToTray(window, func() bool { return cfg.CloseToTray }, quitting.Load)
 ```
 

@@ -28,6 +28,7 @@ go get -tool github.com/smegg99/s99wails/traygen/v2
 | `v2/shell/tray` | theme-aware tray, rebuildable menus, close-to-tray |
 | `v2/shell/window` | resize limits |
 | `v2/shell/windowstate` | geometry across restarts |
+| `v2/shell/crash` | error screen for startup failures and crashes, drawn by the app's frontend |
 | `v2/services/browser` | open a URL in the real browser |
 | `v2/services/logger` | frontend logs into s99logger |
 | `v2/services/theme` | theme events to the frontend |
@@ -54,6 +55,16 @@ version writes bindings the runtime does not match.
 go run github.com/wailsapp/wails/v3/cmd/wails3 generate bindings -d frontend/bindings -ts
 ```
 
+## Render setup
+
+Call `env.Setup(env.Options{})` before creating the Wails application. The zero
+options preserve WebKit's native rendering path and the user's environment.
+`S99_RENDER=nogbm`, `shm` or `legacy` selects an explicit fallback; `auto` leaves
+the native path alone. Set `AppImageRenderPath` when a packaged app requires a
+different default on unknown host GPU stacks. `PreferX11` is an explicit option,
+since it changes the available refresh rates and monitor scaling under Wayland.
+The result reports the selected path and its source for diagnostics.
+
 ## Generators
 
 ```go
@@ -64,14 +75,82 @@ go run github.com/wailsapp/wails/v3/cmd/wails3 generate bindings -d frontend/bin
 `frontendgen -s99ab` also emits the appearance bridge, for an app that extends
 the `@smegg99/s99ab` layer.
 
+`frontendgen` also emits `installDesktopEditKeys`. Install it once in the
+frontend alongside the native `shell/editkeys.Watch` registration:
+
+```ts
+import { installDesktopEditKeys } from './composables/s99wails/editKeys'
+
+const stop = installDesktopEditKeys()
+// Call stop when the frontend owner is disposed (including hot reload).
+```
+
+The bridge dispatches the native `edit:key` undo/redo event to the focused
+control. If no listener takes it, an editable control receives its native undo
+or redo. It also prevents WebKitGTK from pasting the primary selection on a
+middle release outside the focused text field; a release inside the field
+retains its normal paste. The returned function removes both subscriptions.
+
+## Error screen
+
+`shell/crash` opens the app's own frontend at `/?s99crash` with only its
+`Service` bound, in a window of `Options.Width` x `Height` that is also its
+minimum (pass the main window's minimum). It gathers the report and runs Copy,
+Save, Email, Show log file, Restart, Close, Wait, Kill and SetTitle; the
+frontend draws the screen, for example with S99AB's `UiCrashScreen`, whose
+`title` event goes to `crashActions.setTitle`.
+
+```go
+opts := crash.Options{App: application.Options{Name: "App", Icon: icon, Assets: assets}, Version: version, ReportEmail: "me@example.com"}
+_ = crash.Watch(opts)                      // first in main
+log := s99logger.New(s99logger.MultiSink(s99logger.MinLevel(console, s99logger.LevelInfo), crash.Sink()), s99logger.Options{MinLevel: s99logger.LevelDebug})
+crash.Describe(crash.Details{Lang: "pl", LogFile: logPath})
+crash.Show(opts, crash.Failure{Kind: crash.KindConfig, File: path, Err: err.Error()}) // before the main app
+// with the main app: register &crash.Heartbeat{}, call stop := crash.Beat() after application.New
+crash.Done()                               // last step of a clean shutdown
+```
+
+`Watch` runs a watcher copy of the program and points `debug.SetCrashOutput`
+at a pipe to it. Lines travel on the same pipe from one writer goroutine; a
+full queue drops log lines and never blocks the app. The watcher keeps the last
+1000 log lines from `crash.Sink`, so a report has the debug history up to the
+end.
+
+| The pipe ends with | The watcher shows |
+| --- | --- |
+| `Done` | nothing |
+| a crash trace | `crash`, with the trace |
+| neither | `killed`; on Linux `oom` when the kernel's `oom_kill` count rose |
+
+A native or page beat silent for 15 s opens `hang` with `alive`: Wait hides it
+for another 15 s and beats that return hide it too; Kill sends SIGQUIT so the
+runtime writes every goroutine's stack into the report, then SIGKILL after
+5 s. Windows has no SIGQUIT, so its hang report has no stacks. A watcher that
+gets SIGTERM, as at logout or from a dev runner signalling the process group,
+dies quietly.
+
+Email writes the full report to `<user cache>/<app>/reports` (kept 14 days) and
+hands it and the log file to the mail client as attachments: `xdg-email` on
+Linux when the default mailto handler is Thunderbird, Betterbird, KMail or
+Evolution, Simple MAPI (`MAPISendMailW`) on Windows. Any other client, or a
+failure within 10 s, gets a `mailto:` with the report in the body.
+
+```ts
+import { crashActions, installCrashHeartbeat, isCrashWindow, onCrashReport } from './composables/s99wails'
+// isCrashWindow() in the root picks the screen; crashActions.report() loads it and
+// onCrashReport follows a hang's update. installCrashHeartbeat() runs in the main window.
+```
+
 An `appIcon` block in `trayicons.cue` adds the window icon as `AppIcon`, a PNG
 for `application.Options.Icon` (README, "Code generation").
 
 ## Tray artwork
 
 The generated `ForStatus` supplies SVG icon themes and native bitmap assets
-to `shell/tray.Manager`. Linux sets `IconName` and `IconThemePath` and keeps
-`IconPixmap` populated as a fallback. Flat SVG names support hosts without
+to `shell/tray.Manager`. On Linux the manager is its own StatusNotifierItem
+(Wails' Linux tray publishes only a pixmap): it sets `IconName` and
+`IconThemePath`, keeps `IconPixmap` populated as a fallback, and publishes the
+tooltip. Windows and macOS use the Wails tray. Flat SVG names support hosts without
 theme indexing; `index.theme`, scalable and fixed-size status directories
 support hosts that select artwork by size. The manager extracts embedded
 themes to its own private temporary directory and removes it on close.
@@ -149,16 +228,12 @@ Point at checkouts in your app, never in a release:
 replace (
 	github.com/smegg99/s99wails/v2 => ../S99Wails
 	github.com/smegg99/s99wails/traygen/v2 => ../S99Wails/traygen
-	github.com/wailsapp/wails/v3 => ../wails/v3
 )
 ```
 
 A `replace` in a dependency's `go.mod` does not apply to your build, so a
-released module must pin real tags.
-The Wails replacement is currently required for `SystemTray.SetThemedIcon`,
-provided by the local fork. Wails beta.20 itself exposes only bitmap tray
-updates on Linux; remove the replacement only after a published dependency
-provides the native icon-theme API.
+released module must pin real tags. Wails itself comes from the module proxy
+(`v3.0.0-beta.34`); pin the same version in your app.
 
 ## Native notifications
 
@@ -233,7 +308,9 @@ flush, accepted-edit settling, the app's capture and adopt functions, and
 localization for blocked transfers and errors. Call `init` after shell setup and
 `ready` when the layout or window label changes. Pass `dragHooks` to S99AB's
 `UiTabStrip`, and show `failure`, `cancellable`, `retry` and `cancel` in the
-app's own UI.
+app's own UI. `closeEmptied` decides whether a secondary window left with only
+pinned tabs by a move closes through the normal close handshake (`Close`); main
+never does, because its close button hides every window or quits.
 
 A transfer completes in order: the target adopts and flushes, then calls
 `Claim`; the source removes and flushes, then calls `Released`. Go holds the
@@ -249,5 +326,17 @@ dropping elsewhere in its client area appends. A drop outside the source strip
 still tears off when no other workspace is under the pointer.
 The native regression runs with `go test -tags gtk3 ./shell/windows` and needs
 `cc`, `pkg-config`, `xvfb-run` and `dbus-run-session`; it owns an isolated X server.
-Native Wayland and other unsupported backends use tear-off on pointer release, with
-compositor placement; they do not provide cross-window pointer targeting.
+
+Native Wayland (GTK3) gives no global pointer and no window positions. Inside
+the source window the tab is followed in that window's coordinates. Past it, a
+GTK drag with the same-app target `application/x-s99wails-tab` takes over, and
+every workspace webview is a drop site that reports its own coordinates, so the
+destination strip shows the slot as on X11. WebKit does not see the drag as HTML
+drag and drop. A drop outside the app's windows and Escape both tear off, and
+the compositor places the new window.
+
+Outside the source window the page hides its own dragged tab and the native drag
+carries a PNG of it from `DragImage`: as the drag icon on Wayland, in an
+input-less popup on X11. `tab:track` tells the source page whether the pointer
+is inside its window and where. Other backends tear off on pointer release
+without cross-window targeting.
