@@ -108,7 +108,7 @@ log := s99logger.New(s99logger.MultiSink(s99logger.MinLevel(console, s99logger.L
 crash.Describe(crash.Details{Lang: "pl", LogFile: logPath})
 crash.Show(opts, crash.Failure{Kind: crash.KindConfig, File: path, Err: err.Error()}) // before the main app
 // with the main app: register &crash.Heartbeat{}, call stop := crash.Beat() after application.New
-// (past its single-instance check); stop() before the shutdown cleanup
+// (past its single-instance check); the quit ends it, stop() ends it earlier
 crash.Done()                               // last step of a clean shutdown
 ```
 
@@ -128,8 +128,9 @@ end.
 A native or page beat silent for 15 s opens `hang` with `alive`: Wait hides it
 for another 15 s and beats that return hide it too; Kill sends SIGQUIT so the
 runtime writes every goroutine's stack into the report, then SIGKILL after
-5 s. Windows has no SIGQUIT, so its hang report has no stacks. `Beat`'s stop
-rests the native beat, so a slow shutdown is never a hang. Close and Restart
+5 s. Windows has no SIGQUIT, so its hang report has no stacks. When Wails
+starts to quit, `Beat` tells the watcher, which stops expecting native and page
+beats, so a slow shutdown is never a hang. Close and Restart
 are refused while a hung app still runs. A watcher that
 gets SIGTERM, as at logout or from a dev runner signalling the process group,
 dies quietly.

@@ -27,6 +27,7 @@ const (
 	lineRest    = "rest"
 	lineBye     = "bye"
 	lineUp      = "up"
+	lineQuit    = "quit"
 )
 
 // pipe writes framed lines to the watcher from one goroutine, so no caller ever blocks on it.

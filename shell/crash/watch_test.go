@@ -259,6 +259,28 @@ func TestLoopHidesAHangWhenBeatsReturnAndAfterWait(t *testing.T) {
 	}
 }
 
+func TestLoopIgnoresSilentBeatsAfterQuit(t *testing.T) {
+	defer func(h, c time.Duration) { hangAfter, checkEvery = h, c }(hangAfter, checkEvery)
+	hangAfter, checkEvery = 100*time.Millisecond, 10*time.Millisecond
+	events := make(chan event)
+	ui := fakeScreen{steps: make(chan string, 8)}
+	w := newWatched(Options{}, 0, newControls())
+	done := make(chan int)
+	go func() { done <- w.loop(events, ui) }()
+
+	events <- event{kind: lineUp}
+	events <- event{kind: lineBeat, payload: sourcePage}
+	events <- event{kind: lineQuit}
+	events <- event{kind: lineBeat, payload: sourceNative}
+	time.Sleep(4 * hangAfter)
+	events <- event{kind: lineBye}
+	events <- event{kind: eventEnd}
+	if step := next(t, ui.steps); step != "quit" {
+		t.Fatalf("step = %q, want a slow quit to stay quiet", step)
+	}
+	<-done
+}
+
 func TestFrameIsOneShortLine(t *testing.T) {
 	line := frame(lineLog, strings.Repeat("x", 2*maxLine)+"\nsecond")
 	if len(line) != maxLine || strings.Count(line, "\n") != 1 || !strings.HasPrefix(line, marker+"log ") {

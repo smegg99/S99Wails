@@ -53,8 +53,10 @@ type watched struct {
 	beats   map[string]time.Time
 	bye     bool
 	// up is set once the app is running; an exit before that (a second instance) is never a kill.
-	up  bool
-	oom int64
+	up bool
+	// quitting is set once the app starts to quit; its cleanup may block every beat, the page's too.
+	quitting bool
+	oom      int64
 
 	hung       bool
 	stopping   bool
@@ -110,6 +112,9 @@ func (w *watched) take(e event, ui screen) {
 	case lineLog:
 		w.log.add(e.payload)
 	case lineBeat:
+		if w.quitting {
+			return
+		}
 		w.beats[e.payload] = time.Now()
 		if w.hung && !w.stopping && !w.stalled() {
 			w.hung = false
@@ -121,6 +126,9 @@ func (w *watched) take(e event, ui screen) {
 		w.bye = true
 	case lineUp:
 		w.up = true
+	case lineQuit:
+		w.quitting = true
+		clear(w.beats)
 	case eventTrace:
 		w.trace.WriteString(e.payload)
 	}
