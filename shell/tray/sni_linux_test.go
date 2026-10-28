@@ -10,6 +10,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -220,5 +221,20 @@ func TestItemOnTheBus(t *testing.T) {
 	defer mu.Unlock()
 	if len(errs) != 0 {
 		t.Fatalf("errors: %v", errs)
+	}
+}
+
+// A panic in an app's menu action must crash the process, so the crash watcher shows its trace.
+func TestMenuActionPanicCrashesTheProcess(t *testing.T) {
+	if os.Getenv("S99_TRAY_PANIC") != "" {
+		newSNI("app", Options{}).run(func() { panic("boom") })
+		time.Sleep(time.Second)
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=^TestMenuActionPanicCrashesTheProcess$")
+	cmd.Env = append(os.Environ(), "S99_TRAY_PANIC=1")
+	out, err := cmd.CombinedOutput()
+	if err == nil || !strings.Contains(string(out), "panic: boom") {
+		t.Fatalf("err = %v, output %q; want the process to die of the panic", err, out)
 	}
 }

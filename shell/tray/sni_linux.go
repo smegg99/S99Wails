@@ -342,14 +342,7 @@ func (s *sni) run(action func()) {
 	if action == nil {
 		return
 	}
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				s.report(recoveredError(r))
-			}
-		}()
-		action()
-	}()
+	go action()
 }
 
 func (s *sni) click(id int32) bool {
