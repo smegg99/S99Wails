@@ -21,8 +21,7 @@ const watcherEnv = "S99_CRASH_WATCHER"
 // Watch starts a watcher copy of this program that shows the screen when this process crashes, stops
 // responding or is killed. Call it first in main: in the watcher copy it never returns.
 func Watch(opts Options) error {
-	if value := os.Getenv(watcherEnv); value != "" {
-		pid, _ := strconv.Atoi(value)
+	if pid, ok := becomeWatcher(); ok {
 		signal.Ignore(os.Interrupt)
 		os.Exit(runWatcher(os.Stdin, opts, pid))
 	}
@@ -31,6 +30,17 @@ func Watch(opts Options) error {
 		return fmt.Errorf("find executable: %w", err)
 	}
 	return spawn(exe, os.Args[1:])
+}
+
+// becomeWatcher takes the watched pid and unsets the variable, so a restarted program is the app.
+func becomeWatcher() (pid int, ok bool) {
+	value := os.Getenv(watcherEnv)
+	if value == "" {
+		return 0, false
+	}
+	_ = os.Unsetenv(watcherEnv)
+	pid, _ = strconv.Atoi(value)
+	return pid, true
 }
 
 // spawn starts the watcher as exe args and routes this process's crash output and lines to it.

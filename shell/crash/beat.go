@@ -39,9 +39,11 @@ func Beat() (stop func()) {
 			}
 		}
 	}()
+	// A quit's cleanup can outlast hangAfter; resting keeps it from showing as not responding.
 	return sync.OnceFunc(func() {
 		ticker.Stop()
 		close(quit)
+		send(lineRest, sourceNative)
 	})
 }
 

@@ -97,8 +97,10 @@ func Done() {
 	if p == nil {
 		return
 	}
-	drain(p, 2*time.Second)
-	p.write(frame(lineBye, ""))
+	// A stuck writer would block the bye as well.
+	if drain(p, 2*time.Second) {
+		p.write(frame(lineBye, ""))
+	}
 }
 
 // drain closes p to new lines and waits up to timeout for the queued ones; true when they all went out.

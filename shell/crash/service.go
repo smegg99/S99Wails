@@ -29,6 +29,7 @@ type Service struct {
 var (
 	errNoApp     = errors.New("application not initialized")
 	errNotHanged = errors.New("the app is not waiting on this screen")
+	errAlive     = errors.New("the app still runs; wait for it or kill it")
 )
 
 func newService(opts Options, r Report, ctl controls) *Service {
@@ -135,8 +136,11 @@ func (s *Service) OpenLogs() error {
 	return app.Env.OpenFileManager(file, true)
 }
 
-// Restart starts the program again, without the watcher flag, and closes the screen.
+// Restart starts the program again and closes the screen; refused while the hung app still runs.
 func (s *Service) Restart() error {
+	if s.Report().Alive {
+		return errAlive
+	}
 	app := application.Get()
 	if app == nil {
 		return errNoApp
@@ -146,11 +150,6 @@ func (s *Service) Restart() error {
 		return fmt.Errorf("find executable: %w", err)
 	}
 	cmd := exec.Command(exe, os.Args[1:]...)
-	for _, kv := range os.Environ() {
-		if !strings.HasPrefix(kv, watcherEnv+"=") {
-			cmd.Env = append(cmd.Env, kv)
-		}
-	}
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("restart: %w", err)
@@ -160,10 +159,15 @@ func (s *Service) Restart() error {
 	return nil
 }
 
-func (s *Service) Close() {
+// Close closes the screen; refused while the hung app still runs.
+func (s *Service) Close() error {
+	if s.Report().Alive {
+		return errAlive
+	}
 	if app := application.Get(); app != nil {
 		app.Quit()
 	}
+	return nil
 }
 
 func slug(name string) string {
