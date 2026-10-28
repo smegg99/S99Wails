@@ -4,6 +4,7 @@ package crash
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const (
@@ -20,7 +23,7 @@ const (
 )
 
 // TestMain runs the helper roles: a watcher that records what it would show, and a watched process
-// that panics, exits before it is up, waits to be killed, exits cleanly or hangs.
+// that panics, has a panic Wails recovered, exits before it is up, waits to be killed, exits cleanly or hangs.
 func TestMain(m *testing.M) {
 	out := os.Getenv(helperOut)
 	switch {
@@ -45,6 +48,9 @@ func TestMain(m *testing.M) {
 			os.Exit(0)
 		case "kill":
 			send(lineUp, "")
+		case "wails-panic":
+			send(lineUp, "")
+			PanicHandler(&application.PanicDetails{Error: errors.New("boom"), StackTrace: "goroutine 7 [running]:"})
 		case "panic":
 			time.Sleep(200 * time.Millisecond)
 			go func() { panic("boom") }()
@@ -129,6 +135,15 @@ func TestWatcherShowsAGoroutinePanic(t *testing.T) {
 	steps := watchRole(t, "panic", func(*exec.Cmd) {})
 	r := shown(t, steps, 0)
 	if r.Kind != KindCrash || r.Error != "panic: boom" || r.Lang != "pl" || !strings.Contains(r.Text, "last words") {
+		t.Fatalf("report = %+v", r)
+	}
+}
+
+func TestWatcherShowsAPanicWailsRecovered(t *testing.T) {
+	steps := watchRole(t, "wails-panic", func(*exec.Cmd) {})
+	r := shown(t, steps, 0)
+	if r.Kind != KindCrash || r.Error != "panic: boom" || !strings.Contains(r.Text, "goroutine 7 [running]:") ||
+		!strings.Contains(r.Text, "last words") {
 		t.Fatalf("report = %+v", r)
 	}
 }

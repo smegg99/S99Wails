@@ -97,13 +97,20 @@ func Done() {
 	if p == nil {
 		return
 	}
+	drain(p, 2*time.Second)
+	p.write(frame(lineBye, ""))
+}
+
+// drain closes p to new lines and waits up to timeout for the queued ones; true when they all went out.
+func drain(p *pipe, timeout time.Duration) bool {
 	p.mu.Lock()
 	p.closed = true
 	close(p.lines)
 	p.mu.Unlock()
 	select {
 	case <-p.done:
-	case <-time.After(2 * time.Second):
+		return true
+	case <-time.After(timeout):
+		return false
 	}
-	p.write(frame(lineBye, ""))
 }
