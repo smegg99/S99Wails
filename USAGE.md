@@ -103,10 +103,12 @@ frontend draws the screen, for example with S99AB's `UiCrashScreen`, whose
 ```go
 opts := crash.Options{App: application.Options{Name: "App", Icon: icon, Assets: assets}, Version: version, ReportEmail: "me@example.com"}
 _ = crash.Watch(opts)                      // first in main
+// application.Options{PanicHandler: crash.PanicHandler, ...} for the main app
 log := s99logger.New(s99logger.MultiSink(s99logger.MinLevel(console, s99logger.LevelInfo), crash.Sink()), s99logger.Options{MinLevel: s99logger.LevelDebug})
 crash.Describe(crash.Details{Lang: "pl", LogFile: logPath})
 crash.Show(opts, crash.Failure{Kind: crash.KindConfig, File: path, Err: err.Error()}) // before the main app
 // with the main app: register &crash.Heartbeat{}, call stop := crash.Beat() after application.New
+// (past its single-instance check); stop() before the shutdown cleanup
 crash.Done()                               // last step of a clean shutdown
 ```
 
@@ -119,13 +121,16 @@ end.
 | The pipe ends with | The watcher shows |
 | --- | --- |
 | `Done` | nothing |
-| a crash trace | `crash`, with the trace |
-| neither | `killed`; on Linux `oom` when the kernel's `oom_kill` count rose |
+| no `Beat` yet, as when a second instance hands over to the first | nothing |
+| a crash trace, or a panic Wails recovered through `PanicHandler` | `crash`, with the trace |
+| none of these | `killed`; on Linux `oom` when the kernel's `oom_kill` count rose |
 
 A native or page beat silent for 15 s opens `hang` with `alive`: Wait hides it
 for another 15 s and beats that return hide it too; Kill sends SIGQUIT so the
 runtime writes every goroutine's stack into the report, then SIGKILL after
-5 s. Windows has no SIGQUIT, so its hang report has no stacks. A watcher that
+5 s. Windows has no SIGQUIT, so its hang report has no stacks. `Beat`'s stop
+rests the native beat, so a slow shutdown is never a hang. Close and Restart
+are refused while a hung app still runs. A watcher that
 gets SIGTERM, as at logout or from a dev runner signalling the process group,
 dies quietly.
 
@@ -233,7 +238,7 @@ replace (
 
 A `replace` in a dependency's `go.mod` does not apply to your build, so a
 released module must pin real tags. Wails itself comes from the module proxy
-(`v3.0.0-beta.34`); pin the same version in your app.
+(`v3.0.0`); pin the same version in your app.
 
 ## Native notifications
 

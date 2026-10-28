@@ -46,6 +46,9 @@ extracted once, so the next app imports it instead. Pairs well with
   events addressed to the window that received the input. `editkeys.Watch`
   also keeps WebKitGTK 2.54 from crashing on a paste from a selection nothing
   owns (X11).
+- `shell/crash`: a watcher copy of the program that opens the app's own
+  frontend as an error screen when the app cannot start, crashes, stops
+  responding or is killed. See [USAGE](USAGE.md#error-screen).
 - `shell/windowstate`: window geometry persisted across runs behind a two-method
   Store interface.
 - `services/{browser,logger,theme,title}`: Wails-bound services with typed TS
@@ -57,7 +60,7 @@ extracted once, so the next app imports it instead. Pairs well with
   plus a CUE config, with typed Go accessors, and optionally the app's own
   icon as an embedded PNG.
 - `frontendgen`: emits the Vue composables (runtime detection, locale
-  sync, system theme, log bridge, window title) into your app's frontend
+  sync, system theme, log bridge, window title, edit keys, crash screen) into your app's frontend
   tree, no npm packaging.
 - [`webbench`](./webbench): measures a page inside WebKitGTK and compares
   render-path configurations, one child process per configuration.
@@ -105,7 +108,7 @@ under `shell/`, and the import path carries the `/v2` suffix. `traygen` is a
 separate module; the code it emits imports `shell/tray`, so it also carries the
 suffix and is tagged `traygen/v2.0.0`.
 
-The module pins upstream `wails/v3 v3.0.0-beta.34`. On Linux, build with
+The module pins upstream `wails/v3 v3.0.0`. On Linux, build with
 `-tags gtk3` (WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many
 GPU setups.
 
