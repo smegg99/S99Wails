@@ -1,5 +1,7 @@
 // cmd/s99webbench/main.go
 
+//go:build linux
+
 // Command s99webbench measures a page inside WebKitGTK and compares render paths.
 // It needs cgo, gtk3, webkit2gtk-4.1 and a display.
 //
