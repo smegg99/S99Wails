@@ -52,7 +52,9 @@ type watched struct {
 	trace   strings.Builder
 	beats   map[string]time.Time
 	bye     bool
-	oom     int64
+	// up is set once the app is running; an exit before that (a second instance) is never a kill.
+	up  bool
+	oom int64
 
 	hung       bool
 	stopping   bool
@@ -117,6 +119,8 @@ func (w *watched) take(e event, ui screen) {
 		delete(w.beats, e.payload)
 	case lineBye:
 		w.bye = true
+	case lineUp:
+		w.up = true
 	case eventTrace:
 		w.trace.WriteString(e.payload)
 	}
@@ -132,7 +136,7 @@ func (w *watched) stalled() bool {
 	return false
 }
 
-// end decides what the end of the pipe means: a stopped hang, a crash, a clean exit or a kill.
+// end decides what the end of the pipe means: a stopped hang, a crash, a clean or early exit, or a kill.
 func (w *watched) end(ui screen) int {
 	trace := strings.TrimSpace(w.trace.String())
 	switch {
@@ -140,7 +144,7 @@ func (w *watched) end(ui screen) int {
 		ui.show(w.report(KindHang, trace, false))
 	case trace != "":
 		ui.show(w.report(KindCrash, trace, false))
-	case w.bye:
+	case w.bye || !w.up:
 		ui.quit()
 	default:
 		time.Sleep(killedGrace)

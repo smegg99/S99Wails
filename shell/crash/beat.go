@@ -16,9 +16,10 @@ const (
 	sourcePage   = "frontend"
 )
 
-// Beat shows the watcher the main thread is alive: every 2 s a callback on it sends a beat, and a
-// callback still waiting is never queued twice. Call it after application.New; stop ends it.
+// Beat tells the watcher the app is up, then beats from the main thread every 2 s until stopped.
+// Call it after application.New, which runs the single-instance check.
 func Beat() (stop func()) {
+	send(lineUp, "")
 	var waiting atomic.Bool
 	ticker := time.NewTicker(beatEvery)
 	quit := make(chan struct{})

@@ -20,7 +20,7 @@ const (
 )
 
 // TestMain runs the helper roles: a watcher that records what it would show, and a watched process
-// that panics, waits to be killed, exits cleanly or hangs.
+// that panics, exits before it is up, waits to be killed, exits cleanly or hangs.
 func TestMain(m *testing.M) {
 	out := os.Getenv(helperOut)
 	switch {
@@ -41,6 +41,10 @@ func TestMain(m *testing.M) {
 		Describe(Details{Lang: "pl", LogFile: "/tmp/app.log"})
 		send(lineLog, "last words")
 		switch os.Getenv(helperRole) {
+		case "early":
+			os.Exit(0)
+		case "kill":
+			send(lineUp, "")
 		case "panic":
 			time.Sleep(200 * time.Millisecond)
 			go func() { panic("boom") }()
@@ -48,6 +52,7 @@ func TestMain(m *testing.M) {
 			Done()
 			os.Exit(0)
 		case "hang":
+			send(lineUp, "")
 			send(lineBeat, sourceNative)
 		}
 		select {}
@@ -142,6 +147,13 @@ func TestWatcherShowsAKill(t *testing.T) {
 func TestWatcherStaysQuietAfterACleanExit(t *testing.T) {
 	steps := watchRole(t, "bye", func(*exec.Cmd) {})
 	if len(steps) != 2 || steps[0] != "quit" {
+		t.Fatalf("steps = %q, want quit then exit", steps)
+	}
+}
+
+func TestWatcherStaysQuietWhenTheAppExitsBeforeItIsUp(t *testing.T) {
+	steps := watchRole(t, "early", func(*exec.Cmd) {})
+	if len(steps) != 2 || steps[0] != "quit" || steps[1] != "exit" {
 		t.Fatalf("steps = %q, want quit then exit", steps)
 	}
 }
