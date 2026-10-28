@@ -94,6 +94,8 @@ func send(kind, payload string) {
 
 // Done tells the watcher this is a clean exit. Call it last, after the logger is closed.
 func Done() {
+	ending.Lock()
+	defer ending.Unlock()
 	p := out.Swap(nil)
 	if p == nil {
 		return

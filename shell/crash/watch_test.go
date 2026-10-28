@@ -51,6 +51,14 @@ func TestMain(m *testing.M) {
 		case "wails-panic":
 			send(lineUp, "")
 			PanicHandler(&application.PanicDetails{Error: errors.New("boom"), StackTrace: "goroutine 7 [running]:"})
+		case "wails-panic-twice":
+			send(lineUp, "")
+			for range 4000 {
+				send(lineLog, strings.Repeat("busy ", 600))
+			}
+			go PanicHandler(&application.PanicDetails{Error: errors.New("first"), StackTrace: "goroutine 7 [running]:"})
+			time.Sleep(time.Millisecond)
+			PanicHandler(&application.PanicDetails{Error: errors.New("second"), StackTrace: "goroutine 8 [running]:"})
 		case "panic":
 			time.Sleep(200 * time.Millisecond)
 			go func() { panic("boom") }()
@@ -145,6 +153,13 @@ func TestWatcherShowsAPanicWailsRecovered(t *testing.T) {
 	if r.Kind != KindCrash || r.Error != "panic: boom" || !strings.Contains(r.Text, "goroutine 7 [running]:") ||
 		!strings.Contains(r.Text, "last words") {
 		t.Fatalf("report = %+v", r)
+	}
+}
+
+func TestWatcherShowsOneOfTwoPanicsAtOnce(t *testing.T) {
+	steps := watchRole(t, "wails-panic-twice", func(*exec.Cmd) {})
+	if r := shown(t, steps, 0); r.Kind != KindCrash || !strings.HasPrefix(r.Error, "panic: ") {
+		t.Fatalf("report kind %q error %q, want a crash with one of the traces", r.Kind, r.Error)
 	}
 }
 
