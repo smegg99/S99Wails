@@ -7,7 +7,7 @@ require (
 	github.com/smegg99/s99config v1.0.1
 	github.com/smegg99/s99logger v1.1.0
 	github.com/smegg99/s99wails/v2 v2.0.0
-	github.com/wailsapp/wails/v3 v3.0.0-beta.34
+	github.com/wailsapp/wails/v3 v3.0.0
 )
 
 require (
