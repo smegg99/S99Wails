@@ -189,7 +189,7 @@ states: {
 
 ```go
 // next to the SVGs and trayicons.cue:
-//go:generate go tool traygen -config trayicons.cue
+//go:generate go tool traygen --config trayicons.cue
 
 // switch states at runtime:
 manager.SetIcons(trayicons.ForStatus(trayicons.StatusError))
@@ -198,7 +198,7 @@ manager.SetIcons(trayicons.ForStatus(trayicons.StatusError))
 An optional `appIcon` block renders one more SVG as is, with no themes and
 no states, for the window and the taskbar. The first size is embedded as
 `AppIcon`; the others are written beside it as `<prefix>-app-<N>px.png`.
-Wails on Linux takes PNG bytes here, not SVG. `appicon/` under `-out` is
+Wails on Linux takes PNG bytes here, not SVG. `appicon/` under `--out` is
 generated and removed on every run, so keep the source elsewhere; traygen
 refuses a source inside it.
 
@@ -215,11 +215,18 @@ application.New(application.Options{Icon: trayicons.AppIcon})
 
 frontendgen: the Vue composables ship the same way. The emitted files
 import only `vue` and `@wailsio/runtime`; binding services are injected by
-the caller.
+the caller. Event names, service paths and the crash query key the composables
+share with Go arrive in `names.ts`, generated from the Go constants.
 
 ```go
-//go:generate go tool frontendgen -out ../frontend/app/composables/s99wails
+//go:generate go tool frontendgen --out ../frontend/app/composables/s99wails
 ```
+
+frontendgen, traygen and `cmd/s99webbench` are Cobra commands. Flags take two
+dashes (`--out`, not `-out`). Each takes `--lang en|pl`; without it,
+`S99WAILS_LANG` and then the OS locale pick the language. Progress and errors
+go to stderr, help and JSON to stdout. Exit 0 means done, 1 failed work and 2
+a usage error.
 
 ## Examples
 
@@ -249,9 +256,11 @@ Godoc examples with verified output live next to the packages
 ## Development
 
 `just check` runs `gofmt`, `go vet` and `go test` across all three modules
-(root, `traygen`, `examples`), eslint and tsc over the TypeScript assets, the
-VERSION drift check, and two regeneration diffs: `examples/frontendgen/gen`
-against `frontendgen/assets`, and `examples/traygen` against its SVGs and CUE.
+(root, `traygen`, `examples`), the vitest suite for the emitted composables,
+eslint and tsc over the TypeScript assets, the VERSION drift check, and two
+regeneration diffs: `examples/frontendgen/gen` against `frontendgen/assets`,
+and `examples/traygen` against its SVGs and CUE. The frontendgen Go tests also
+fail when `frontendgen/assets/names.ts` no longer matches the Go constants.
 
 ```sh
 just            # list recipes
@@ -259,6 +268,8 @@ just check      # everything
 just fix        # eslint --fix
 just frontendgen  # regenerate the emitted composables
 just traygen      # regenerate the example tray icons
+just names        # regenerate frontendgen/assets/names.ts from the Go constants
+just locales      # rebuild the commands' catalogues from i18n/ and traygen/i18n/
 ```
 
 `VERSION` is the source of truth for the version; `just set-version 2.0.1`

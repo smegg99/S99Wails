@@ -2,7 +2,7 @@
 
 // WebKitGTK render path rungs. Compare them on a given machine with:
 //
-//	go run github.com/smegg99/s99wails/v2/cmd/s99webbench -dir frontend/.output/public -matrix
+//	go run github.com/smegg99/s99wails/v2/cmd/s99webbench --dir frontend/.output/public --matrix
 
 package env
 

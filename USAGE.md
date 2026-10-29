@@ -68,12 +68,18 @@ The result reports the selected path and its source for diagnostics.
 ## Generators
 
 ```go
-//go:generate go tool traygen -config trayicons.cue
-//go:generate go tool frontendgen -out ../frontend/app/composables/s99wails
+//go:generate go tool traygen --config trayicons.cue
+//go:generate go tool frontendgen --out ../frontend/app/composables/s99wails
 ```
 
-`frontendgen -s99ab` also emits the appearance bridge, for an app that extends
-the `@smegg99/s99ab` layer.
+`frontendgen --s99ab` also emits the appearance and tabs bridges, for an app that
+extends the `@smegg99/s99ab` layer. Flags take two dashes; `--lang en|pl` (or
+`S99WAILS_LANG`) picks the language of the help and the status lines. Exit 2
+is a usage error, exit 1 failed work.
+
+`names.ts` holds every event name, service path and query key the composables
+share with Go. It is generated from the Go constants (`just names`); the
+frontendgen tests fail when it is stale.
 
 `frontendgen` also emits `installDesktopEditKeys`. Install it once in the
 frontend alongside the native `shell/editkeys.Watch` registration:
@@ -84,6 +90,9 @@ import { installDesktopEditKeys } from './composables/s99wails/editKeys'
 const stop = installDesktopEditKeys()
 // Call stop when the frontend owner is disposed (including hot reload).
 ```
+
+`editkeys.Watch(win, onError)` reports a window it cannot watch to `onError`; a nil
+`onError` drops the failure.
 
 The bridge dispatches the native `edit:key` undo/redo event to the focused
 control. If no listener takes it, an editable control receives its native undo
@@ -113,10 +122,13 @@ crash.Done()                               // last step of a clean shutdown
 ```
 
 `Watch` runs a watcher copy of the program and points `debug.SetCrashOutput`
-at a pipe to it. Lines travel on the same pipe from one writer goroutine; a
-full queue drops log lines and never blocks the app. The watcher keeps the last
-1000 log lines from `crash.Sink`, so a report has the debug history up to the
-end.
+at a pipe to it. A line goes into the pipe at once when the pipe has room and
+nothing is queued, so the lines just before a fatal crash are not lost;
+otherwise one writer goroutine sends the queue, and a full queue drops log lines
+and never blocks the app. `Done` and `PanicHandler` give up on a watcher that
+stopped reading after a second, so the process still exits. The watcher keeps
+the last 1000 log lines from `crash.Sink`, so a report has the debug history up
+to the end.
 
 | The pipe ends with | The watcher shows |
 | --- | --- |
@@ -159,7 +171,10 @@ to `shell/tray.Manager`. On Linux the manager is its own StatusNotifierItem
 tooltip. Windows and macOS use the Wails tray. Flat SVG names support hosts without
 theme indexing; `index.theme`, scalable and fixed-size status directories
 support hosts that select artwork by size. The manager extracts embedded
-themes to its own private temporary directory and removes it on close.
+themes to its own private temporary directory; `Close` returns after the tray is
+gone and that directory removed. `OnError` runs outside the manager's locks, so
+it may rebuild the menu; it must not call `Close`, which waits for the goroutine
+that reports icon errors.
 
 | Platform | Default physical sizes | Native asset | Transparent inset |
 |---|---|---|---|
@@ -307,7 +322,7 @@ After creating the Wails app:
 
 The main window is named `main`; the library names secondary windows.
 
-On the frontend, `frontendgen -s99ab` emits `tabsBridge.ts` with
+On the frontend, `frontendgen --s99ab` emits `tabsBridge.ts` with
 `bridgeDesktopTabs`. Create it in a Vue scope and pass the generated window
 bindings, an S99AB `useTabs` workspace, the scope identity, layout readiness and
 flush, accepted-edit settling, the app's capture and adopt functions, and
@@ -339,7 +354,9 @@ GTK drag with the same-app target `application/x-s99wails-tab` takes over, and
 every workspace webview is a drop site that reports its own coordinates, so the
 destination strip shows the slot as on X11. WebKit does not see the drag as HTML
 drag and drop. A drop outside the app's windows and Escape both tear off, and
-the compositor places the new window.
+the compositor places the new window. A drag GTK breaks (grab lost, timeout or
+error) ends with the tab left in place. Drops and drag ends are never lost to a
+burst of motion events.
 
 Outside the source window the page hides its own dragged tab and the native drag
 carries a PNG of it from `DragImage`: as the drag icon on Wayland, in an
