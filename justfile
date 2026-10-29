@@ -59,8 +59,8 @@ check-version:
 
 # Rebuild the commands' message catalogues from i18n/ and traygen/i18n/.
 locales:
-    go run github.com/smegg99/s99locale/cmd/loc@v1.0.0 build -c i18n/config.cue
-    go run github.com/smegg99/s99locale/cmd/loc@v1.0.0 build -c traygen/i18n/config.cue
+    go run github.com/smegg99/s99locale/cmd/loc@v1.1.0 build -c i18n/config.cue
+    go run github.com/smegg99/s99locale/cmd/loc@v1.1.0 build -c traygen/i18n/config.cue
 
 # Regenerate frontendgen/assets/names.ts from the Go constants it shares.
 names:

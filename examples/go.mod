@@ -4,8 +4,8 @@ go 1.27
 
 require (
 	github.com/joho/godotenv v1.5.1
-	github.com/smegg99/s99config v1.0.1
-	github.com/smegg99/s99logger v1.2.0
+	github.com/smegg99/s99config v1.1.0
+	github.com/smegg99/s99logger v1.3.0
 	github.com/smegg99/s99wails/v2 v2.0.0
 	github.com/wailsapp/wails/v3 v3.0.0
 )
@@ -59,8 +59,8 @@ require (
 	github.com/protocolbuffers/txtpbfmt v0.0.0-20260803135053-1fd8a60d1ffc // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
-	github.com/smegg99/s99locale v1.0.0 // indirect
-	github.com/smegg99/s99term v1.0.0 // indirect
+	github.com/smegg99/s99locale v1.1.0 // indirect
+	github.com/smegg99/s99term v1.1.0 // indirect
 	github.com/smegg99/s99wails/traygen/v2 v2.0.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

@@ -8,9 +8,9 @@ require (
 	github.com/dave/jennifer v1.7.1
 	github.com/kanrichan/resvg-go v0.0.1
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
-	github.com/smegg99/s99locale v1.0.0
-	github.com/smegg99/s99logger v1.2.0
-	github.com/smegg99/s99term v1.0.0
+	github.com/smegg99/s99locale v1.1.0
+	github.com/smegg99/s99logger v1.3.0
+	github.com/smegg99/s99term v1.1.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/image v0.45.0
 	golang.org/x/text v0.41.0

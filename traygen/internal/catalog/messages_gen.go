@@ -33,11 +33,12 @@ func withCount(l *i18n.Localizer, id string, count int, data map[string]any) str
 	return out
 }
 
-// CliErrNoArgs Usage error when a command is given a positional argument
+// CliErrNoArgsParams are the placeholders of cli.errNoArgs.
 type CliErrNoArgsParams struct {
 	Command string
 }
 
+// CliErrNoArgs Usage error when a command is given a positional argument
 func CliErrNoArgs(l *i18n.Localizer, p CliErrNoArgsParams) string {
 	data := map[string]any{
 		"Command": p.Command,
@@ -45,12 +46,13 @@ func CliErrNoArgs(l *i18n.Localizer, p CliErrNoArgsParams) string {
 	return withData(l, "cli.errNoArgs", data)
 }
 
-// CliErrUnsupportedLanguage Rejects --lang with a language there is no catalogue for
+// CliErrUnsupportedLanguageParams are the placeholders of cli.errUnsupportedLanguage.
 type CliErrUnsupportedLanguageParams struct {
 	Lang      string
 	Supported string
 }
 
+// CliErrUnsupportedLanguage Rejects --lang with a language there is no catalogue for
 func CliErrUnsupportedLanguage(l *i18n.Localizer, p CliErrUnsupportedLanguageParams) string {
 	data := map[string]any{
 		"Lang":      p.Lang,
@@ -64,11 +66,12 @@ func CliFailed(l *i18n.Localizer) string {
 	return plain(l, "cli.failed")
 }
 
-// CliFlagHelp Usage text Cobra generates for every --help flag
+// CliFlagHelpParams are the placeholders of cli.flagHelp.
 type CliFlagHelpParams struct {
 	Command string
 }
 
+// CliFlagHelp Usage text Cobra generates for every --help flag
 func CliFlagHelp(l *i18n.Localizer, p CliFlagHelpParams) string {
 	data := map[string]any{
 		"Command": p.Command,
@@ -116,11 +119,12 @@ func CliHeadingHelpTopics(l *i18n.Localizer) string {
 	return plain(l, "cli.headingHelpTopics")
 }
 
-// CliHeadingMoreInfo Closing line of the help template; [command] is Cobra's literal token
+// CliHeadingMoreInfoParams are the placeholders of cli.headingMoreInfo.
 type CliHeadingMoreInfoParams struct {
 	Command string
 }
 
+// CliHeadingMoreInfo Closing line of the help template; [command] is Cobra's literal token
 func CliHeadingMoreInfo(l *i18n.Localizer, p CliHeadingMoreInfoParams) string {
 	data := map[string]any{
 		"Command": p.Command,
