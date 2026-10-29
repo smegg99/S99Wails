@@ -30,12 +30,15 @@ const (
 	lineQuit    = "quit"
 )
 
-// pipe writes framed lines to the watcher from one goroutine, so no caller ever blocks on it.
+// pipe writes a line at once when the pipe has room and nothing is queued, so a runtime crash
+// right after it cannot lose it; otherwise one goroutine writes the queue. No caller blocks on it.
 type pipe struct {
 	w       *os.File
 	lines   chan string
 	done    chan struct{}
 	dropped atomic.Int64
+	// pending counts queued lines not yet written; a direct write would overtake them.
+	pending atomic.Int64
 
 	mu     sync.RWMutex
 	closed bool
@@ -56,6 +59,7 @@ func (p *pipe) run() {
 			p.write(frame(lineLog, fmt.Sprintf("[%d log lines dropped]", n)))
 		}
 		p.write(line)
+		p.pending.Add(-1)
 	}
 }
 
@@ -85,9 +89,15 @@ func send(kind, payload string) {
 	if p.closed {
 		return
 	}
+	line := frame(kind, payload)
+	if p.pending.Load() == 0 && tryWrite(p.w, line) {
+		return
+	}
+	p.pending.Add(1)
 	select {
-	case p.lines <- frame(kind, payload):
+	case p.lines <- line:
 	default:
+		p.pending.Add(-1)
 		p.dropped.Add(1)
 	}
 }
@@ -100,10 +110,15 @@ func Done() {
 	if p == nil {
 		return
 	}
-	// A stuck writer would block the bye as well.
-	if drain(p, 2*time.Second) {
-		p.write(frame(lineBye, ""))
-	}
+	finish(p, frame(lineBye, ""), time.Second)
+}
+
+// finish drains p and writes text last; each step gives up after timeout, so a watcher that
+// stopped reading never keeps the process from exiting.
+func finish(p *pipe, text string, timeout time.Duration) {
+	drain(p, timeout)
+	_ = p.w.SetWriteDeadline(time.Now().Add(timeout))
+	p.write(text)
 }
 
 // drain closes p to new lines and waits up to timeout for the queued ones; true when they all went out.

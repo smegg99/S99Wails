@@ -23,7 +23,6 @@ func PanicHandler(d *application.PanicDetails) {
 		_, _ = os.Stderr.WriteString(text)
 		os.Exit(2)
 	}
-	drain(p, time.Second)
-	p.write(text)
+	finish(p, text, time.Second)
 	os.Exit(2)
 }

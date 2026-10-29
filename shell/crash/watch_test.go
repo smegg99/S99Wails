@@ -60,7 +60,6 @@ func TestMain(m *testing.M) {
 			time.Sleep(time.Millisecond)
 			PanicHandler(&application.PanicDetails{Error: errors.New("second"), StackTrace: "goroutine 8 [running]:"})
 		case "panic":
-			time.Sleep(200 * time.Millisecond)
 			go func() { panic("boom") }()
 		case "bye":
 			Done()

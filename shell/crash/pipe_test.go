@@ -83,3 +83,22 @@ func TestBeatSendsQuitWhenTheAppContextEnds(t *testing.T) {
 		}
 	}
 }
+
+// A panic's last write gives up on a watcher that stopped reading, so the process still exits.
+func TestLastWriteGivesUpWhenNobodyReads(t *testing.T) {
+	openPipe(t)
+	for range 64 {
+		send(lineLog, strings.Repeat("x", 3000))
+	}
+	p := out.Swap(nil)
+	done := make(chan struct{})
+	go func() {
+		finish(p, strings.Repeat("panic: boom\n", 1000), 100*time.Millisecond)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("the last write blocked on a pipe nobody reads")
+	}
+}
