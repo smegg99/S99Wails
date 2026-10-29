@@ -7,7 +7,7 @@ check: fmt vet test test-frontendgen lint typecheck check-version check-frontend
 
 # Exercise emitted helper behavior without a browser or native runtime.
 test-frontendgen:
-    node --test scripts/test-frontendgen.mjs
+    pnpm test
 
 # Format the Go files in every module.
 fmt:

@@ -19,6 +19,8 @@
     }
   },
   "include": [
-    ".frontendgen-check/**/*.ts"
+    ".frontendgen-check/**/*.ts",
+    "frontendgen/tests/**/*.ts",
+    "vitest.config.ts"
   ]
 }
