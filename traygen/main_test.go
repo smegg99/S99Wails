@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,7 @@ import (
 
 func TestRunFullPipeline(t *testing.T) {
 	out := t.TempDir()
-	if err := run(filepath.Join("testdata", "trayicons.cue"), out); err != nil {
+	if _, err := run(context.Background(), filepath.Join("testdata", "trayicons.cue"), out); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 
@@ -29,21 +30,21 @@ func TestRunFullPipeline(t *testing.T) {
 }
 
 func TestRunBadConfig(t *testing.T) {
-	if err := run(filepath.Join("testdata", "nope.cue"), t.TempDir()); err == nil {
+	if _, err := run(context.Background(), filepath.Join("testdata", "nope.cue"), t.TempDir()); err == nil {
 		t.Fatal("missing config must error")
 	}
 }
 
 func TestRunPrunesStaleAssets(t *testing.T) {
 	out := t.TempDir()
-	if err := run(filepath.Join("testdata", "trayicons.cue"), out); err != nil {
+	if _, err := run(context.Background(), filepath.Join("testdata", "trayicons.cue"), out); err != nil {
 		t.Fatal(err)
 	}
 	stale := filepath.Join(out, "dark", "windows", "app-tray-dark-gone.png")
 	if err := os.WriteFile(stale, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := run(filepath.Join("testdata", "trayicons.cue"), out); err != nil {
+	if _, err := run(context.Background(), filepath.Join("testdata", "trayicons.cue"), out); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(stale); !os.IsNotExist(err) {
@@ -56,7 +57,7 @@ func TestRunPrunesStaleAssets(t *testing.T) {
 
 func TestRunWritesAppIcon(t *testing.T) {
 	out := t.TempDir()
-	if err := run(filepath.Join("testdata", "appicon.cue"), out); err != nil {
+	if _, err := run(context.Background(), filepath.Join("testdata", "appicon.cue"), out); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 	for _, rel := range []string{"appicon/app-tray-app.png", "appicon/app-tray-app-16px.png"} {
@@ -68,14 +69,14 @@ func TestRunWritesAppIcon(t *testing.T) {
 
 func TestRunPrunesAppIcon(t *testing.T) {
 	out := t.TempDir()
-	if err := run(filepath.Join("testdata", "appicon.cue"), out); err != nil {
+	if _, err := run(context.Background(), filepath.Join("testdata", "appicon.cue"), out); err != nil {
 		t.Fatal(err)
 	}
 	stale := filepath.Join(out, "appicon", "app-tray-app-99px.png")
 	if err := os.WriteFile(stale, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := run(filepath.Join("testdata", "appicon.cue"), out); err != nil {
+	if _, err := run(context.Background(), filepath.Join("testdata", "appicon.cue"), out); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(stale); !os.IsNotExist(err) {
@@ -83,7 +84,7 @@ func TestRunPrunesAppIcon(t *testing.T) {
 	}
 
 	// Dropping the block drops the whole generated tree with it.
-	if err := run(filepath.Join("testdata", "trayicons.cue"), out); err != nil {
+	if _, err := run(context.Background(), filepath.Join("testdata", "trayicons.cue"), out); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(out, "appicon")); !os.IsNotExist(err) {
@@ -122,7 +123,7 @@ appIcon: source: "appicon/icon.svg"
 		t.Fatal(err)
 	}
 
-	err := run(config, dir)
+	_, err := run(context.Background(), config, dir)
 	if err == nil || !strings.Contains(err.Error(), "inside the generated appicon/ directory") {
 		t.Fatalf("run = %v, want the source refused", err)
 	}

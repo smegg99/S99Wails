@@ -5,7 +5,7 @@
 //	go generate ./traygen
 //	go run ./traygen
 //
-//go:generate go tool traygen -config trayicons.cue
+//go:generate go tool traygen --config trayicons.cue
 package main
 
 import "fmt"

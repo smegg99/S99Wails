@@ -1,0 +1,57 @@
+# traygen/i18n/locales/pl/cli.yaml
+
+flagHelp:
+  value: "pomoc dla {command}"
+  placeholders:
+    command: {type: string}
+flagLang:
+  value: "język komunikatów: en lub pl (domyślnie S99WAILS_LANG, potem język systemu)"
+
+headingUsage:
+  value: "Użycie:"
+headingAliases:
+  value: "Aliasy:"
+headingExamples:
+  value: "Przykłady:"
+headingCommands:
+  value: "Dostępne polecenia:"
+headingAdditionalCommands:
+  value: "Inne polecenia:"
+headingFlags:
+  value: "Flagi:"
+headingGlobalFlags:
+  value: "Flagi globalne:"
+headingHelpTopics:
+  value: "Dodatkowe tematy pomocy:"
+headingMoreInfo:
+  value: "Użyj \"{command} [command] --help\", aby dowiedzieć się więcej o poleceniu."
+  placeholders:
+    command: {type: string}
+
+errUnsupportedLanguage:
+  value: "nieobsługiwany język {lang}; dostępne: {supported}"
+  placeholders:
+    lang: {type: string}
+    supported: {type: string}
+errNoArgs:
+  value: "{command} nie przyjmuje argumentów"
+  placeholders:
+    command: {type: string}
+
+statusOk:
+  value: "ok"
+statusFailed:
+  value: "błąd"
+statusSkipped:
+  value: "pominięto"
+statusWaiting:
+  value: "czeka"
+statusRunning:
+  value: "trwa"
+statusWarning:
+  value: "uwaga"
+statusStale:
+  value: "nieaktualne"
+
+failed:
+  value: "przerwano"

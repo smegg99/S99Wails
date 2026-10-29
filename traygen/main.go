@@ -1,95 +1,133 @@
 // traygen/main.go
 
-// traygen generates tray icons per theme and state from labeled SVGs, with Go
-// accessors and preview sheets. Run next to a trayicons.cue (format: schema.cue):
+// traygen generates tray icons per theme and state from labeled SVGs, with Go accessors and preview
+// sheets. Run next to a trayicons.cue (format: schema.cue):
 //
 //	//go:generate go tool traygen
 package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
-	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
+
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/smegg99/s99term"
+	"github.com/spf13/cobra"
+
+	"github.com/smegg99/s99wails/traygen/v2/internal/catalog"
+	"github.com/smegg99/s99wails/traygen/v2/internal/cli"
 )
 
 func main() {
-	configPath := flag.String("config", "trayicons.cue", "path to the trayicons CUE config")
-	outDir := flag.String("out", "", "output directory (default: the config file's directory)")
-	flag.Parse()
-
-	dir := *outDir
-	if dir == "" {
-		dir = filepath.Dir(*configPath)
-	}
-
-	if err := run(*configPath, dir); err != nil {
-		log.Fatal(err)
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	a := cli.New(os.Stderr, os.Stdout, os.Environ())
+	code := a.Run(ctx, newRoot(a), os.Args[1:])
+	stop()
+	os.Exit(code)
 }
 
-func run(configPath, outDir string) error {
+func newRoot(a *cli.App) *cobra.Command {
+	var configPath, outDir string
+	cmd := &cobra.Command{
+		Use:  "traygen",
+		Args: a.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			dir := outDir
+			if dir == "" {
+				dir = filepath.Dir(configPath)
+			}
+			done, err := run(cmd.Context(), configPath, dir)
+			if err != nil {
+				return err
+			}
+			l := a.Say()
+			a.Console().Line(s99term.StatusOK, catalog.TraygenGenerated(l),
+				s99term.F("variants", strconv.Itoa(done.variants)), s99term.F("themes", strconv.Itoa(done.themes)),
+				s99term.F("states", strconv.Itoa(done.states)), s99term.F("out", dir))
+			if done.appIcon != nil {
+				a.Console().Line(s99term.StatusOK, catalog.TraygenAppIcon(l),
+					s99term.F("sizes", fmt.Sprint(done.appIcon)), s99term.F("out", filepath.Join(dir, appIconDir)))
+			}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&configPath, "config", "trayicons.cue", "")
+	cmd.Flags().StringVar(&outDir, "out", "", "")
+	a.Describe(func(l *i18n.Localizer) {
+		cmd.Short, cmd.Long = catalog.TraygenShort(l), catalog.TraygenLong(l)
+		cmd.Flags().Lookup("config").Usage = catalog.TraygenFlagConfig(l)
+		cmd.Flags().Lookup("out").Usage = catalog.TraygenFlagOut(l)
+	})
+	return a.Root(cmd)
+}
+
+// summary is what a run generated: tray variants per theme and state, and the app icon's sizes if any.
+type summary struct {
+	variants, themes, states int
+	appIcon                  []int
+}
+
+func run(ctx context.Context, configPath, outDir string) (summary, error) {
 	cfg, err := LoadConfig(configPath)
 	if err != nil {
-		return err
+		return summary{}, err
 	}
 	if err := checkTraySources(cfg, configPath, outDir); err != nil {
-		return err
+		return summary{}, err
 	}
 
 	variants, err := BuildVariants(cfg, filepath.Dir(configPath))
 	if err != nil {
-		return err
+		return summary{}, err
 	}
 
-	r, err := NewRenderer(context.Background())
+	r, err := NewRenderer(ctx)
 	if err != nil {
-		return err
+		return summary{}, err
 	}
 	defer r.Close()
 
 	if cfg.AppIcon != nil {
 		if err := checkAppIconSource(cfg, configPath, outDir); err != nil {
-			return err
+			return summary{}, err
 		}
 	}
 
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		return err
+		return summary{}, err
 	}
 
 	// Remove only the generated trees; outDir may also hold the sources.
 	for _, dir := range append(cfg.ThemeNames(), appIconDir) {
 		if err := os.RemoveAll(filepath.Join(outDir, dir)); err != nil {
-			return fmt.Errorf("clean %s: %w", dir, err)
+			return summary{}, fmt.Errorf("clean %s: %w", dir, err)
 		}
 	}
 
 	if err := WriteAssets(cfg, variants, r, outDir); err != nil {
-		return err
+		return summary{}, err
 	}
+	done := summary{variants: len(variants), themes: len(cfg.Themes), states: len(cfg.States)}
 	if cfg.AppIcon != nil {
 		if err := WriteAppIcon(cfg, r, filepath.Dir(configPath), outDir); err != nil {
-			return err
+			return summary{}, err
 		}
+		done.appIcon = cfg.AppIcon.Sizes
 	}
 	if err := GenerateGo(cfg, outDir); err != nil {
-		return err
+		return summary{}, err
 	}
 	if err := WriteSheet(cfg, variants, r, outDir); err != nil {
-		return err
+		return summary{}, err
 	}
-
-	fmt.Printf("traygen: %d variants (%d themes x %d states) -> %s\n",
-		len(variants), len(cfg.Themes), len(cfg.States), outDir)
-	if cfg.AppIcon != nil {
-		fmt.Printf("traygen: app icon at %v px -> %s\n",
-			cfg.AppIcon.Sizes, filepath.Join(outDir, appIconDir))
-	}
-	return nil
+	return done, nil
 }
 
 // checkTraySources protects editable artwork from the generated-tree cleanup.

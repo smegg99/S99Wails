@@ -1,0 +1,20 @@
+# traygen/i18n/locales/en/traygen.yaml
+
+short:
+  value: "Generate themed tray icons, Go accessors and preview sheets from labeled SVGs"
+  description: "traygen's one-line description, in --help"
+long:
+  value: "traygen renders a tray icon per theme and state from the labeled SVGs a trayicons.cue names, writes Go accessors for them and draws preview sheets. Run it from go:generate next to the config."
+  description: "traygen's long description, in --help"
+flagConfig:
+  value: "path to the trayicons CUE config"
+  description: "Usage text for traygen's --config flag"
+flagOut:
+  value: "output directory (default: the config file's directory)"
+  description: "Usage text for traygen's --out flag"
+generated:
+  value: "Generated the tray icons"
+  description: "Line after a run; the variants, themes, states and out fields follow it"
+appIcon:
+  value: "Generated the app icon"
+  description: "Line after a run with an app icon; the sizes and out fields follow it"

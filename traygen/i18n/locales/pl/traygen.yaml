@@ -1,0 +1,14 @@
+# traygen/i18n/locales/pl/traygen.yaml
+
+short:
+  value: "Generuje ikony zasobnika dla motywów, akcesory Go i arkusze podglądu z opisanych plików SVG"
+long:
+  value: "traygen renderuje ikonę zasobnika dla każdego motywu i stanu z opisanych plików SVG wskazanych w trayicons.cue, zapisuje do nich akcesory Go i rysuje arkusze podglądu. Uruchamiaj go z go:generate obok konfiguracji."
+flagConfig:
+  value: "ścieżka do konfiguracji CUE trayicons"
+flagOut:
+  value: "katalog wyjściowy (domyślnie katalog pliku konfiguracji)"
+generated:
+  value: "Wygenerowano ikony zasobnika"
+appIcon:
+  value: "Wygenerowano ikonę aplikacji"

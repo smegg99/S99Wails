@@ -180,7 +180,7 @@ func TestRunProtectsEditableSizeSource(t *testing.T) {
 	if err := os.WriteFile(config, []byte(validConfig+`themes: dark: platforms: windows: sizeSources: "16": "dark/small.svg"`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := run(config, dir); err == nil || !strings.Contains(err.Error(), "inside generated directory") {
+	if _, err := run(context.Background(), config, dir); err == nil || !strings.Contains(err.Error(), "inside generated directory") {
 		t.Fatalf("source was not protected: %v", err)
 	}
 	data, err := os.ReadFile(source)

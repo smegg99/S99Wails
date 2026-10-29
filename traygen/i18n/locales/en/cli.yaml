@@ -1,0 +1,78 @@
+# traygen/i18n/locales/en/cli.yaml
+
+flagHelp:
+  value: "help for {command}"
+  description: "Usage text Cobra generates for every --help flag"
+  placeholders:
+    command: {type: string}
+flagLang:
+  value: "language of the output: en or pl (default: S99WAILS_LANG, then the OS locale)"
+  description: "Usage text for the --lang flag every command has"
+
+headingUsage:
+  value: "Usage:"
+  description: "Heading of the usage line in --help"
+headingAliases:
+  value: "Aliases:"
+  description: "Heading of the alias list in --help"
+headingExamples:
+  value: "Examples:"
+  description: "Heading of the examples in --help"
+headingCommands:
+  value: "Available Commands:"
+  description: "Heading of the subcommand list in --help"
+headingAdditionalCommands:
+  value: "Additional Commands:"
+  description: "Heading of the ungrouped subcommands in --help"
+headingFlags:
+  value: "Flags:"
+  description: "Heading of the command's own flags in --help"
+headingGlobalFlags:
+  value: "Global Flags:"
+  description: "Heading of the inherited flags in --help"
+headingHelpTopics:
+  value: "Additional help topics:"
+  description: "Heading of the help topics in --help"
+headingMoreInfo:
+  value: "Use \"{command} [command] --help\" for more information about a command."
+  description: "Closing line of the help template; [command] is Cobra's literal token"
+  placeholders:
+    command: {type: string}
+
+errUnsupportedLanguage:
+  value: "unsupported language {lang}; the tools speak {supported}"
+  description: "Rejects --lang with a language there is no catalogue for"
+  placeholders:
+    lang: {type: string}
+    supported: {type: string}
+errNoArgs:
+  value: "{command} takes no arguments"
+  description: "Usage error when a command is given a positional argument"
+  placeholders:
+    command: {type: string}
+
+statusOk:
+  value: "ok"
+  description: "The word beside the [+] glyph on a finished line"
+statusFailed:
+  value: "failed"
+  description: "The word beside the [x] glyph on a finished line"
+statusSkipped:
+  value: "skipped"
+  description: "The word beside the [-] glyph on a finished line"
+statusWaiting:
+  value: "waiting"
+  description: "The word beside the [ ] glyph on a waiting line"
+statusRunning:
+  value: "running"
+  description: "The word beside the [*] glyph on a live step"
+statusWarning:
+  value: "warning"
+  description: "The word beside the [!] glyph on a warning line"
+statusStale:
+  value: "stale"
+  description: "The word beside the [~] glyph on a stale line"
+
+failed:
+  value: "the run stopped"
+  description: "Last line of a run that failed; the error field after it says why"

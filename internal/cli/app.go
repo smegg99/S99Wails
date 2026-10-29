@@ -1,7 +1,6 @@
 // internal/cli/app.go
 
-// Package cli is the shared shape of the module's commands: Cobra for the tree and flags, S99Term for
-// output, S99Locale for every message and S99Logger for the log lines.
+// Package cli is the shape of the module's commands: Cobra, S99Term output, S99Locale text, S99Logger logs.
 package cli
 
 import (
