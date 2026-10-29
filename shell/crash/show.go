@@ -60,7 +60,7 @@ func (s *wailsScreen) show(r Report) {
 		return
 	}
 	s.svc.set(r)
-	s.app.Event.Emit(ReportEvent, r)
+	s.app.Event.Emit(reportEvent, r)
 	s.window.Show()
 	s.window.Focus()
 }

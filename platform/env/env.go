@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// LaunchedViaAppImage reports whether the process is running inside an AppImage.
-func LaunchedViaAppImage() bool {
+// launchedViaAppImage reports whether the process is running inside an AppImage.
+func launchedViaAppImage() bool {
 	if os.Getenv("APPIMAGE") != "" || os.Getenv("APPDIR") != "" {
 		return true
 	}
@@ -30,8 +30,8 @@ func setDefault(key, value string) {
 
 // Override variables Setup reads when Options.RenderPathVar or DebugVar is empty.
 const (
-	DefaultRenderPathVar = "S99_RENDER"
-	DefaultDebugVar      = "S99_RENDER_DEBUG"
+	defaultRenderPathVar = "S99_RENDER"
+	defaultDebugVar      = "S99_RENDER_DEBUG"
 )
 
 // Options configures Setup. Each field is an independent opt-in.
@@ -67,17 +67,17 @@ type Result struct {
 // Setup resolves the render path (user environment, then RenderPathVar, then
 // AppImageRenderPath inside an AppImage, then RenderPath) and applies PreferX11.
 func Setup(o Options) Result {
-	res := Result{AppImage: LaunchedViaAppImage()}
+	res := Result{AppImage: launchedViaAppImage()}
 	if runtime.GOOS != "linux" {
 		return res
 	}
 
 	debugVar := o.DebugVar
 	if debugVar == "" {
-		debugVar = DefaultDebugVar
+		debugVar = defaultDebugVar
 	}
 	if os.Getenv(debugVar) == "1" {
-		DebugRendering()
+		debugRendering()
 	}
 
 	path, from := o.resolveRenderPath()
@@ -86,7 +86,7 @@ func Setup(o Options) Result {
 	res.DMABUFDisabled = explicitlySet("WEBKIT_DISABLE_DMABUF_RENDERER")
 
 	if o.PreferX11 {
-		res.X11Preferred = PreferX11OnPlasmaWayland()
+		res.X11Preferred = preferX11OnPlasmaWayland()
 	}
 	return res
 }
@@ -97,12 +97,12 @@ func (o Options) resolveRenderPath() (path RenderPath, from string) {
 	}
 	varName := o.RenderPathVar
 	if varName == "" {
-		varName = DefaultRenderPathVar
+		varName = defaultRenderPathVar
 	}
-	if p, ok := ParseRenderPath(os.Getenv(varName)); ok {
+	if p, ok := parseRenderPath(os.Getenv(varName)); ok {
 		return p, "var"
 	}
-	if LaunchedViaAppImage() {
+	if launchedViaAppImage() {
 		return o.AppImageRenderPath, "appimage"
 	}
 	return o.RenderPath, "default"
@@ -113,9 +113,9 @@ func explicitlySet(key string) bool {
 	return ok
 }
 
-// PreferX11OnPlasmaWayland defaults an unset GDK_BACKEND to x11 on Plasma Wayland and reports
+// preferX11OnPlasmaWayland defaults an unset GDK_BACKEND to x11 on Plasma Wayland and reports
 // whether it applied. Under XWayland GTK 3 paints at a fixed 60 Hz and one scale on every monitor.
-func PreferX11OnPlasmaWayland() bool {
+func preferX11OnPlasmaWayland() bool {
 	if runtime.GOOS != "linux" {
 		return false
 	}

@@ -125,7 +125,7 @@ func (s *Service) target(d *nativeDrag, handle uintptr, x, y int) Drop {
 	if name == d.source {
 		source = d.tab
 	}
-	if slot := strip.DropSlot(x, y, source); name != "" && slot >= 0 {
+	if slot := strip.dropSlot(x, y, source); name != "" && slot >= 0 {
 		drop.Target, drop.Slot = name, slot
 	}
 	return drop
@@ -280,7 +280,7 @@ func (s *Service) followWayland(d *nativeDrag) {
 			}
 			// Released before leaving the window, or where no GTK drag could start.
 			if inside {
-				if slot := strip.DropSlot(drop.X, drop.Y, d.tab); slot >= 0 {
+				if slot := strip.dropSlot(drop.X, drop.Y, d.tab); slot >= 0 {
 					drop.Target, drop.Slot = d.source, slot
 				}
 			}

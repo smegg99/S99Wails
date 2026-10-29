@@ -18,7 +18,7 @@ func clearDisplayEnv(t *testing.T) {
 		// Remaining rung variables and the fallback override names.
 		"WEBKIT_DMABUF_RENDERER_DISABLE_GBM", "WEBKIT_DMABUF_RENDERER_FORCE_SHM",
 		"WEBKIT_SHOW_FPS", "WEBKIT_SHOW_DAMAGE",
-		DefaultRenderPathVar, DefaultDebugVar,
+		defaultRenderPathVar, defaultDebugVar,
 	} {
 		orig, had := os.LookupEnv(k)
 		os.Unsetenv(k)

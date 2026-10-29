@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	MsgOpenURL       s99logger.MessageID = "opening url in default browser"
-	MsgOpenURLFailed s99logger.MessageID = "failed to open url in default browser"
+	msgOpenURL       s99logger.MessageID = "opening url in default browser"
+	msgOpenURLFailed s99logger.MessageID = "failed to open url in default browser"
 )
 
 type Service struct {
@@ -27,7 +27,7 @@ func New(log *s99logger.Logger) *Service {
 
 func (s *Service) OpenURL(url string) error {
 	if s.log != nil {
-		s.log.Info(s99logger.NewEvent(MsgOpenURL, s99logger.String("url", url)))
+		s.log.Info(s99logger.NewEvent(msgOpenURL, s99logger.String("url", url)))
 	}
 
 	app := application.Get()
@@ -36,7 +36,7 @@ func (s *Service) OpenURL(url string) error {
 	}
 	if err := app.Browser.OpenURL(url); err != nil {
 		if s.log != nil {
-			s.log.Error(s99logger.NewEvent(MsgOpenURLFailed,
+			s.log.Error(s99logger.NewEvent(msgOpenURLFailed,
 				s99logger.String("url", url),
 				s99logger.Err(err),
 			))

@@ -188,7 +188,7 @@ func (s *Service) followDrag(d *nativeDrag) {
 				if name == d.source {
 					source = d.tab
 				}
-				if slot := strips[name].DropSlot(drop.X-x, drop.Y-y, source); slot >= 0 {
+				if slot := strips[name].dropSlot(drop.X-x, drop.Y-y, source); slot >= 0 {
 					drop.Target, drop.Slot = name, slot
 				}
 				break

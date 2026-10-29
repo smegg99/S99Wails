@@ -61,8 +61,3 @@ func DetectDarkMode() (dark bool, ok bool) {
 	}
 	return scheme == SchemeDark, true
 }
-
-// WatchAccentChanges calls onChange on accent or color-scheme changes until stop.
-func WatchAccentChanges(onChange func()) (stop func()) {
-	return watchAccentChanges(onChange)
-}

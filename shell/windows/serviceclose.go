@@ -28,7 +28,7 @@ func (s *Service) close(name, owner string) error {
 
 func (s *Service) requestClose(name string) {
 	s.cancelDrag(name, "")
-	if !s.registry.CanClose(name) {
+	if !s.registry.canClose(name) {
 		s.registry.Emit(name, eventWindowBlocked, s.options.BlockedKey)
 		return
 	}
@@ -62,7 +62,7 @@ func RequestQuit(s *Service) bool {
 	s.mu.Unlock()
 	list := s.registry.List()
 	for _, window := range list {
-		if !s.registry.CanClose(window.Name) {
+		if !s.registry.canClose(window.Name) {
 			s.registry.Emit(window.Name, eventWindowBlocked, s.options.BlockedKey)
 			return false
 		}
@@ -146,7 +146,7 @@ func (s *Service) closeReady(name, token string, ready bool) (result error) {
 		}
 		return nil
 	}
-	if !s.registry.CanClose(name) {
+	if !s.registry.canClose(name) {
 		return ErrBusy
 	}
 	s.mu.Lock()

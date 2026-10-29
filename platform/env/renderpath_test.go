@@ -19,7 +19,7 @@ func clearRenderEnv(t *testing.T) {
 		"GDK_BACKEND", "XDG_SESSION_TYPE", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP",
 		"APPIMAGE", "APPDIR", "S99_RENDER_TEST", "S99_DEBUG_TEST",
 		// Fallback names a developer may have exported locally.
-		DefaultRenderPathVar, DefaultDebugVar,
+		defaultRenderPathVar, defaultDebugVar,
 	} {
 		orig, had := os.LookupEnv(k)
 		os.Unsetenv(k)
@@ -163,12 +163,12 @@ func TestDebugVarTurnsOnTheOverlays(t *testing.T) {
 
 func TestParseRenderPathRoundTrips(t *testing.T) {
 	for _, p := range []RenderPath{RenderPathAuto, RenderPathNoGBM, RenderPathSHM, RenderPathLegacy} {
-		got, ok := ParseRenderPath(p.String())
+		got, ok := parseRenderPath(p.String())
 		if !ok || got != p {
 			t.Errorf("%v round-tripped to %v (ok=%v)", p, got, ok)
 		}
 	}
-	if _, ok := ParseRenderPath("nonsense"); ok {
+	if _, ok := parseRenderPath("nonsense"); ok {
 		t.Error("an unknown name reported itself as known")
 	}
 }

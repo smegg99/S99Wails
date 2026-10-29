@@ -22,7 +22,7 @@ var shared = []struct{ ts, dir, goName, doc string }{
 	{"CRASH_SERVICE", "shell/crash", "type Service", "The shell/crash.Service path for Call.ByName."},
 	{"CRASH_HEARTBEAT", "shell/crash", "type Heartbeat", "The shell/crash.Heartbeat path for Call.ByName."},
 	{"CRASH_QUERY", "shell/crash", "Query", "The URL query key that marks the crash screen's window."},
-	{"CRASH_REPORT_EVENT", "shell/crash", "ReportEvent", "Carries each new crash report while the screen is open."},
+	{"CRASH_REPORT_EVENT", "shell/crash", "reportEvent", "Carries each new crash report while the screen is open."},
 	{"EDIT_KEY_EVENT", "shell/editkeys", "Event", "Carries an undo or redo key the native window took."},
 	{"THEME_CHANGED_EVENT", "services/theme", "EventThemeChanged", "Emitted by the services/theme watcher."},
 	{"WINDOWS_CHANGED_EVENT", "shell/windows", "eventWindowsChanged", "Carries the window list after it changes."},

@@ -33,7 +33,6 @@ go get -tool github.com/smegg99/s99wails/traygen/v2
 | `v2/services/logger` | frontend logs into s99logger |
 | `v2/services/theme` | theme events to the frontend |
 | `v2/services/title` | window title from the frontend |
-| `v2/proxy` | a daemon's API at same-origin `/api` over a unix socket |
 | `v2/webbench` | render-path benchmark, Linux only |
 
 `platform/*` and `locale` need no Wails and cross-compile. `shell/*`,

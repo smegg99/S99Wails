@@ -49,8 +49,8 @@ func (p RenderPath) String() string {
 	return "auto"
 }
 
-// ParseRenderPath reads a rung by name. Unknown names return Auto and false.
-func ParseRenderPath(s string) (RenderPath, bool) {
+// parseRenderPath reads a rung by name. Unknown names return Auto and false.
+func parseRenderPath(s string) (RenderPath, bool) {
 	for path, name := range renderPathNames {
 		if s == name {
 			return path, true
@@ -79,9 +79,9 @@ func renderPathFromEnv() (RenderPath, bool) {
 	return RenderPathAuto, false
 }
 
-// DebugRendering enables WebKitGTK's frame counter and damage overlays. Call
+// debugRendering enables WebKitGTK's frame counter and damage overlays. Call
 // before the GUI initializes.
-func DebugRendering() {
+func debugRendering() {
 	setDefault("WEBKIT_SHOW_FPS", "1")
 	setDefault("WEBKIT_SHOW_DAMAGE", "1")
 }

@@ -50,7 +50,7 @@ func TestSourceIsRetainedUntilTheDestinationAcknowledges(t *testing.T) {
 	if err != nil || len(pending) != 1 || pending[0].ID != offer.ID {
 		t.Fatalf("ready: %v %v", pending, err)
 	}
-	if r.CanClose("main") || r.CanClose("other") {
+	if r.canClose("main") || r.canClose("other") {
 		t.Fatal("destroyed transfer participant")
 	}
 	if err := r.Claim("main", offer.ID); err == nil {
@@ -72,7 +72,7 @@ func TestSourceIsRetainedUntilTheDestinationAcknowledges(t *testing.T) {
 	if err := r.Released("main", offer.ID); err != nil {
 		t.Fatal(err)
 	}
-	if !r.CanClose("main") || !r.CanClose("other") {
+	if !r.canClose("main") || !r.canClose("other") {
 		t.Fatal("finished transfer retained")
 	}
 }
@@ -113,7 +113,7 @@ func TestCancelledMoveKeepsTheSourceAndFreesTheWindows(t *testing.T) {
 	if len(source.events) != 1 || source.events[0] != "tab:cancelled" || len(target.events) != 2 || target.events[1] != "tab:cancel" {
 		t.Fatal("wrong cancellation routing")
 	}
-	if !r.CanClose("main") {
+	if !r.canClose("main") {
 		t.Fatal("cancelled transfer blocked close")
 	}
 }

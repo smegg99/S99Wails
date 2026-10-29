@@ -130,7 +130,7 @@ func Register(s *Service, win *application.WebviewWindow, stop func(), closeToTr
 		event.Cancel()
 		if win.Name() == "main" {
 			if closeToTray() {
-				s.registry.HideAll()
+				s.registry.hideAll()
 			} else {
 				RequestQuit(s)
 			}

@@ -222,8 +222,8 @@ func (r *Registry) Cancel(source, id string) error {
 	return nil
 }
 
-// CanClose refuses to destroy either side of an unfinished transfer.
-func (r *Registry) CanClose(name string) bool {
+// canClose refuses to destroy either side of an unfinished transfer.
+func (r *Registry) canClose(name string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, offer := range r.offers {
@@ -273,7 +273,7 @@ func (r *Registry) ShowAll() {
 	}
 	r.Focus("main")
 }
-func (r *Registry) HideAll() {
+func (r *Registry) hideAll() {
 	for _, s := range r.surfaces() {
 		s.Hide()
 	}
@@ -281,7 +281,7 @@ func (r *Registry) HideAll() {
 func (r *Registry) Toggle() {
 	for _, s := range r.surfaces() {
 		if s.Visible() {
-			r.HideAll()
+			r.hideAll()
 			return
 		}
 	}

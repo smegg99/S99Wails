@@ -15,8 +15,8 @@ import (
 const (
 	// Query is what the screen's window URL carries, so the frontend knows to draw the screen.
 	Query = "s99crash"
-	// ReportEvent carries the new Report whenever it changes while the screen is open.
-	ReportEvent = "s99crash:report"
+	// reportEvent carries the new Report whenever it changes while the screen is open.
+	reportEvent = "s99crash:report"
 )
 
 // Kind says why the screen opened.
