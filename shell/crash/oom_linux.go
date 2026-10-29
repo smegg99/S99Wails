@@ -5,13 +5,32 @@ package crash
 import (
 	"bufio"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-// oomKills is the kernel's count of processes it killed for memory; a rise during a run names the cause.
+// oomKills counts the OOM kills in this process's cgroup, which the watcher shares with the app.
 func oomKills() int64 {
-	f, err := os.Open("/proc/vmstat")
+	return cgroupOOMKills("/proc/self/cgroup", "/sys/fs/cgroup")
+}
+
+// cgroupOOMKills reads oom_kill from memory.events of the unified cgroup named in procCgroup.
+func cgroupOOMKills(procCgroup, root string) int64 {
+	data, err := os.ReadFile(procCgroup)
+	if err != nil {
+		return 0
+	}
+	path, ok := "", false
+	for line := range strings.Lines(string(data)) {
+		if path, ok = strings.CutPrefix(strings.TrimSpace(line), "0::"); ok {
+			break
+		}
+	}
+	if !ok {
+		return 0
+	}
+	f, err := os.Open(filepath.Join(root, filepath.FromSlash(path), "memory.events"))
 	if err != nil {
 		return 0
 	}

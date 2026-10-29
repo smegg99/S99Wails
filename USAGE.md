@@ -123,7 +123,7 @@ end.
 | `Done` | nothing |
 | no `Beat` yet, as when a second instance hands over to the first | nothing |
 | a crash trace, or a panic Wails recovered through `PanicHandler` | `crash`, with the trace |
-| none of these | `killed`; on Linux `oom` when the kernel's `oom_kill` count rose |
+| none of these | `killed`; on Linux `oom` when `oom_kill` in its cgroup's `memory.events` rose |
 
 A native or page beat silent for 15 s opens `hang` with `alive`: Wait hides it
 for another 15 s and beats that return hide it too; Kill sends SIGQUIT so the
