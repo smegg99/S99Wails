@@ -1,3 +1,5 @@
+// shell/windows/signal_test.go
+
 package windows
 
 import (

@@ -44,8 +44,7 @@ X-GNOME-Autostart-enabled=true
 	return os.WriteFile(path, []byte(content), 0o644)
 }
 
-// quoteExecArg double-quotes an Exec argument and backslash-escapes ", `, $ and \
-// per the Desktop Entry spec.
+// quoteExecArg quotes an Exec argument and escapes ", `, $ and \ per the Desktop Entry spec.
 func quoteExecArg(arg string) string {
 	var b strings.Builder
 	b.WriteByte('"')
@@ -60,8 +59,7 @@ func quoteExecArg(arg string) string {
 	return b.String()
 }
 
-// sanitizeEntryValue strips control characters (notably newlines, which
-// would otherwise inject additional desktop-entry keys) from a value.
+// sanitizeEntryValue strips control characters, since a newline would inject desktop-entry keys.
 func sanitizeEntryValue(s string) string {
 	return strings.Map(func(r rune) rune {
 		if r < 0x20 || r == 0x7f {

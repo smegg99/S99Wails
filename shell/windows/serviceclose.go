@@ -3,8 +3,7 @@ package windows
 
 import "context"
 
-// Close starts the calling window's close handshake, as its close button
-// does. Main is refused: its close button hides every window or quits.
+// Close starts the calling window's close handshake; Main is refused, since its close hides every window or quits.
 func (s *Service) Close(ctx context.Context, owner string) error {
 	return s.close(CallingName(ctx), owner)
 }
@@ -44,8 +43,7 @@ func (s *Service) requestClose(name string) {
 	s.registry.Emit(name, eventWindowClose, token)
 }
 
-// RequestQuit asks every frontend to flush layout and accepted edits.
-// It is also application.Options.ShouldQuit's gate.
+// RequestQuit asks every frontend to flush layout and edits; it is also the ShouldQuit gate.
 func RequestQuit(s *Service) bool {
 	s.movement.Lock()
 	defer s.movement.Unlock()

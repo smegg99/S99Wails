@@ -9,8 +9,7 @@ const (
 	EventPreferencesChanged = "config:preferences:changed"
 )
 
-// Service is the Wails-bound config service. Register it with
-// application.NewService(&configservice.Service{...}).
+// Service is the Wails-bound config service, registered with application.NewService.
 type Service struct {
 	// OnLanguageChanged receives the configured language after every successful
 	// write, for example locale.SetLocale.

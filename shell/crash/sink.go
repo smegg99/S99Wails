@@ -17,8 +17,7 @@ const ringLines = 1000
 // local is this process's recent log, for Show; the watcher keeps its own copy from the pipe.
 var local = newRing(ringLines)
 
-// Sink feeds the report's recent log: it keeps the last lines here and streams them to the watcher.
-// Give it every level the report should have; it never blocks the caller.
+// Sink keeps the report's recent log lines and streams them to the watcher without blocking; give it every level the report needs.
 func Sink() s99logger.Sink {
 	return sink{}
 }

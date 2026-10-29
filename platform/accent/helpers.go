@@ -15,8 +15,7 @@ type Info struct {
 	AccentWatchSupported bool   `json:"accent_watch_supported"`
 }
 
-// Snapshot returns the current device theme info using only native OS APIs.
-// It does not depend on Wails or any GUI framework.
+// Snapshot returns the device theme from native OS APIs only, with no GUI framework.
 func Snapshot() Info {
 	info := Info{Scheme: SchemeNoPreference}
 
@@ -33,8 +32,7 @@ func Snapshot() Info {
 	return info
 }
 
-// NormalizeToHex converts rgb(R,G,B) or rgba(R,G,B,A) strings into #RRGGBB
-// hex. If the input is already hex it's returned as-is.
+// NormalizeToHex turns rgb() or rgba() into #RRGGBB and returns hex unchanged.
 func NormalizeToHex(color string) string {
 	color = strings.TrimSpace(color)
 	if strings.HasPrefix(color, "#") {

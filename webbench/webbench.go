@@ -1,7 +1,6 @@
 // webbench/webbench.go
 
-// Package webbench measures page load, frame timing and style cost inside
-// WebKitGTK, one process per environment, using an injected probe.
+// Package webbench measures load, frame timing and style cost in WebKitGTK, one process per environment.
 package webbench
 
 import (
@@ -15,8 +14,7 @@ import (
 //go:embed probe.js
 var probeJS string
 
-// GPUPolicy mirrors WebKitHardwareAccelerationPolicy. The zero value is
-// Always, matching the Wails default.
+// GPUPolicy mirrors WebKitHardwareAccelerationPolicy; the zero value is Always, as in Wails.
 type GPUPolicy int
 
 const (

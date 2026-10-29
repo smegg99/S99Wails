@@ -1,7 +1,6 @@
 // examples/windowstate/main.go
 
-// Move or resize the window, quit, run again: the geometry comes back from
-// windowstate.json in the working directory.
+// Move or resize the window and restart: the geometry comes back from windowstate.json.
 package main
 
 import (

@@ -12,8 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// run builds a one-command tool whose work returns work, runs it with args and returns the exit
-// code, the human stream and the data stream.
+// run builds a one-command tool whose work returns work and returns the exit code and both streams.
 func run(t *testing.T, env []string, work error, args ...string) (int, string, string) {
 	t.Helper()
 	out, data := &bytes.Buffer{}, &bytes.Buffer{}

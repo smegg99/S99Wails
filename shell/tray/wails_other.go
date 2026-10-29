@@ -10,8 +10,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-// wailsTray is the Wails system tray: Windows and macOS take pixels and have
-// no themed-icon lookup, so Wails covers them as is.
+// wailsTray is Wails' own tray, used on Windows and macOS, which take pixels and have no themed icons.
 type wailsTray struct {
 	app      *application.App
 	tray     *application.SystemTray

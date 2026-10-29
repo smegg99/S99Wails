@@ -106,8 +106,7 @@ func (s *Service) Save() (string, error) {
 	return path, nil
 }
 
-// Email opens the user's mail client addressed to Options.ReportEmail with the report and the log file
-// attached. Where the client cannot take attachments, the report goes in a mailto body instead.
+// Email opens the mail client to Options.ReportEmail with the report and log attached, or in a mailto body where it cannot attach.
 func (s *Service) Email() error {
 	app := application.Get()
 	if app == nil {

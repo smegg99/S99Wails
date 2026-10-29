@@ -10,8 +10,7 @@ import (
 	"path/filepath"
 )
 
-// applyThemedIcon publishes the SVG theme beside the bitmap, or clears it so
-// the host draws the bitmap.
+// applyThemedIcon publishes the SVG theme beside the bitmap, or clears it so the host draws the bitmap.
 func (m *Manager) applyThemedIcon(tray themedBackend, icons Icons, dark bool) {
 	themed, ok := icons.(ThemedIcons)
 	if !ok {

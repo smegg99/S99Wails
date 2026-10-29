@@ -30,8 +30,7 @@ func Toggle(win *application.WebviewWindow) {
 	Show(win)
 }
 
-// CloseToTray hides the window instead of closing it while enabled() is true.
-// quitting() lets an explicit tray Quit action bypass the hook.
+// CloseToTray hides the window instead of closing it while enabled(); quitting() lets a Quit action through.
 func CloseToTray(win *application.WebviewWindow, enabled func() bool, quitting func() bool) {
 	win.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		if quitting != nil && quitting() {

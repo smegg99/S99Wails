@@ -75,8 +75,7 @@ type themedBackend interface {
 	setThemedIcon(themePath, name string)
 }
 
-// Manager drives the tray icon, tooltip and menu. Methods are safe for
-// concurrent use; icon updates are serialized and coalesced by applyLoop.
+// Manager drives the tray icon, tooltip and menu; safe for concurrent use, with icon updates coalesced by applyLoop.
 type Manager struct {
 	tray backend
 	opts Options
@@ -94,8 +93,7 @@ type Manager struct {
 	stopped chan struct{}
 }
 
-// NewManager creates the tray and sets its first icon from the detected OS
-// theme. app names the Linux StatusNotifierItem and owns the tray elsewhere.
+// NewManager creates the tray with its first icon for the OS theme; app names the Linux StatusNotifierItem.
 func NewManager(app *application.App, opts Options) *Manager {
 	return start(newPlatform(app, opts), opts)
 }
@@ -133,8 +131,7 @@ func (m *Manager) Close() {
 	<-m.stopped
 }
 
-// SetMenu stores the menu builder and applies it. Call RebuildMenu after a
-// locale change to re-run the builder with newly localized strings.
+// SetMenu stores and applies the menu builder; RebuildMenu re-runs it after a locale change.
 func (m *Manager) SetMenu(build func() []Item) {
 	m.mu.Lock()
 	m.buildMenu = build

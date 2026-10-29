@@ -240,8 +240,7 @@ func TestTrackReportsStoreErrors(t *testing.T) {
 	}
 }
 
-// preShowWindow panics on geometry setters before show, as a real window
-// crashes before app.Run starts the main thread.
+// preShowWindow panics on geometry setters before show, as a real window crashes before app.Run.
 type preShowWindow struct {
 	*fakeWindow
 	shown bool

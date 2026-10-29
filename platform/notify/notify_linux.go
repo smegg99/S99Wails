@@ -19,8 +19,7 @@ const (
 	method  = service + ".Notify"
 )
 
-// Desktop sends notifications as one application, over one bus connection
-// opened on first use and opened again after it failed.
+// Desktop sends notifications as one application over one bus connection, reopened after a failure.
 type Desktop struct {
 	app string
 
@@ -33,8 +32,7 @@ type Desktop struct {
 // New names the application every notification comes from.
 func New(app string) *Desktop { return &Desktop{app: app} }
 
-// Send shows one notification with a title and a line of text, for the
-// notification server's own time.
+// Send shows a notification with a title and one line, for the server's own time.
 func (d *Desktop) Send(ctx context.Context, title, body string) error {
 	return d.send(ctx, title, body, "", nil)
 }

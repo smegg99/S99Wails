@@ -21,8 +21,7 @@ type Options struct {
 	Exec []string
 }
 
-// Enable registers the autostart entry, replacing any existing one with the
-// same Name.
+// Enable registers the autostart entry, replacing one with the same Name.
 func Enable(opts Options) error {
 	opts, err := opts.withDefaults()
 	if err != nil {
@@ -31,8 +30,7 @@ func Enable(opts Options) error {
 	return enable(opts)
 }
 
-// Disable removes the autostart entry. Removing a non-existent entry is not
-// an error.
+// Disable removes the autostart entry; a missing one is not an error.
 func Disable(opts Options) error {
 	opts, err := opts.withDefaults()
 	if err != nil {

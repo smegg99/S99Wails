@@ -1,7 +1,6 @@
 // shell/mousenav/mousenav.go
 
-// Package mousenav turns a mouse's back and forward buttons into steps
-// through the window's history, as a browser takes them.
+// Package mousenav turns a mouse's back and forward buttons into history steps, as a browser does.
 package mousenav
 
 import "github.com/wailsapp/wails/v3/pkg/application"

@@ -11,8 +11,7 @@ import (
 	"strings"
 )
 
-// getAccentColor prefers AppleHighlightColor (RGB floats) and falls back to the
-// AppleAccentColor index.
+// getAccentColor prefers AppleHighlightColor and falls back to the AppleAccentColor index.
 func getAccentColor() Color {
 	if c, ok := highlightColor(); ok {
 		return c

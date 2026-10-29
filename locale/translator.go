@@ -9,8 +9,7 @@ import (
 	"github.com/smegg99/s99logger"
 )
 
-// Translator adapts the catalogue to s99logger; event attributes become template
-// data. A nil catalogue yields a nil Translator (no translation).
+// Translator adapts the catalogue to s99logger with attrs as template data; nil for a nil catalogue.
 func (l *Locales) Translator() s99logger.Translator {
 	if l == nil {
 		return nil

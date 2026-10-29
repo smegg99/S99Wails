@@ -20,8 +20,7 @@ type State struct {
 	Maximised bool `json:"maximised"`
 }
 
-// Store loads and saves a State. Load returns ok=false when nothing is saved
-// or the stored content is unreadable, so the next save replaces it.
+// Store loads and saves a State; Load reports false when nothing usable is saved.
 type Store interface {
 	Load() (state State, ok bool, err error)
 	Save(State) error
@@ -47,8 +46,7 @@ type Options struct {
 	OnError func(error)
 }
 
-// Configure applies a saved state to window options before creation; prefer it
-// over Restore. With nothing saved it leaves the options unchanged.
+// Configure applies a saved state to window options before creation, preferred over Restore.
 func Configure(opts *application.WebviewWindowOptions, store Store) (applied bool, err error) {
 	state, ok, err := store.Load()
 	if err != nil || !ok {
@@ -68,8 +66,7 @@ func Configure(opts *application.WebviewWindowOptions, store Store) (applied boo
 	return true, nil
 }
 
-// Restore applies a saved state on the first WindowShow, because geometry
-// setters crash before app.Run starts the main thread.
+// Restore applies a saved state on the first WindowShow, since geometry setters crash before app.Run.
 func Restore(win Window, store Store) error {
 	state, ok, err := store.Load()
 	if err != nil {
@@ -98,8 +95,7 @@ func Restore(win Window, store Store) error {
 	return nil
 }
 
-// Track saves geometry on move and resize (debounced) and on maximise,
-// unmaximise and close. stop unregisters, flushes a final save and is idempotent.
+// Track saves geometry on move and resize (debounced), maximise, unmaximise and close; stop flushes once.
 func Track(win Window, store Store, opts Options) (stop func()) {
 	if opts.Debounce <= 0 {
 		opts.Debounce = 500 * time.Millisecond
@@ -205,8 +201,7 @@ func (t *tracker) captureAndPersist() {
 	t.persist(false)
 }
 
-// persist writes the last captured state. final bypasses the stopped check
-// so the stop flush still runs after stopped is set.
+// persist writes the last state; final skips the stopped check so the stop flush runs.
 func (t *tracker) persist(final bool) {
 	// Snapshot and stopped check belong to the serialized save, not its queue time.
 	t.saveMu.Lock()

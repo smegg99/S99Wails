@@ -1,9 +1,6 @@
 // frontendgen/main.go
 
-// frontendgen writes the s99wails Vue composables into an app's frontend tree:
-//
-//	//go:generate go tool frontendgen --out s99wails
-//	//go:generate go tool frontendgen --out s99wails --s99ab
+// frontendgen writes the s99wails Vue composables into an app's frontend tree, run from go:generate.
 package main
 
 import (

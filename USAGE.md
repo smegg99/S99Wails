@@ -24,10 +24,14 @@ go get -tool github.com/smegg99/s99wails/traygen/v2
 | `v2/platform/autostart` | launch on login, per user |
 | `v2/platform/notify` | lazy native notification sender, Linux implemented |
 | `v2/platform/env` | webview workarounds, call before the GUI starts |
+| `v2/platform/runtimestore` | per-user values in the runtime directory, cleared at logout |
 | `v2/locale` | native-side strings, plurals, language switching |
 | `v2/shell/tray` | theme-aware tray, rebuildable menus, close-to-tray |
 | `v2/shell/window` | resize limits |
 | `v2/shell/windowstate` | geometry across restarts |
+| `v2/shell/windows` | account-scoped windows whose tabs move between them |
+| `v2/shell/editkeys` | undo and redo keys reach the page on Linux |
+| `v2/shell/mousenav` | mouse back and forward buttons step through history |
 | `v2/shell/crash` | error screen for startup failures and crashes, drawn by the app's frontend |
 | `v2/services/browser` | open a URL in the real browser |
 | `v2/services/logger` | frontend logs into s99logger |

@@ -113,8 +113,7 @@ func TestNoBaseLeavesThePhraseAlone(t *testing.T) {
 	}
 }
 
-// The service is built before application.New, so the Base fallback is retried
-// until it resolves and then cached.
+// The service is built before application.New, so the Base fallback is retried until it resolves.
 func TestBaseFallbackIsRetriedNotLatched(t *testing.T) {
 	orig := appNameFn
 	defer func() { appNameFn = orig }()
@@ -179,8 +178,7 @@ func TestConcurrentSetsLeaveAConsistentTitle(t *testing.T) {
 	}
 }
 
-// Set releases mu before apply, so a slow main-thread dispatch does not block
-// other Set and Title calls.
+// Set releases mu before apply, so a slow main-thread dispatch blocks no other Set or Title.
 func TestSetIsNotQueuedBehindAnInFlightDispatch(t *testing.T) {
 	s := New(Options{Base: "SmeggTuner"})
 
@@ -234,8 +232,7 @@ func TestSetIsNotQueuedBehindAnInFlightDispatch(t *testing.T) {
 	}
 }
 
-// Set re-reads state after taking applyMu, so the last apply matches Title.
-// The race is repeated because one attempt may not hit the bad ordering.
+// Set re-reads state under applyMu, so the last apply matches Title; repeated to hit the bad ordering.
 func TestConcurrentSetsNeverLeaveTheWindowOlderThanTitle(t *testing.T) {
 	for attempt := 0; attempt < 200; attempt++ {
 		s := New(Options{Base: "SmeggTuner"})

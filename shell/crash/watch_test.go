@@ -22,8 +22,7 @@ const (
 	helperRole = "S99_CRASH_TEST_ROLE"
 )
 
-// TestMain runs the helper roles: a watcher that records what it would show, and a watched process
-// that panics, has a panic Wails recovered, exits before it is up, waits to be killed, exits cleanly or hangs.
+// TestMain runs the helper roles: a recording watcher and watched processes that panic, exit early, wait, exit cleanly or hang.
 func TestMain(m *testing.M) {
 	out := os.Getenv(helperOut)
 	switch {

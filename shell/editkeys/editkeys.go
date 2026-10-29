@@ -1,7 +1,6 @@
 // shell/editkeys/editkeys.go
 
-// Package editkeys sends ctrl+Z and ctrl+shift+Z to the page as events, which Wails on Linux
-// may drop, and keeps a failed clipboard TARGETS reply from crashing WebKitGTK 2.54 (X11).
+// Package editkeys sends ctrl+Z and ctrl+shift+Z to the page and stops a failed clipboard TARGETS reply from crashing WebKitGTK 2.54 on X11.
 package editkeys
 
 import "github.com/wailsapp/wails/v3/pkg/application"
@@ -16,8 +15,7 @@ func init() {
 // GDK's keyval for z: a lower-case letter's is its code point.
 const keyZ = 'z'
 
-// actionOf names what a key press does: "undo", "redo", or "" for a key the
-// page keeps. key is the lower-cased keyval; other is Alt, Super or Meta held.
+// actionOf names a key press's action, undo, redo or "" for a key the page keeps; other is Alt, Super or Meta.
 func actionOf(key uint, control, shift, other bool) string {
 	if key != keyZ || !control || other {
 		return ""

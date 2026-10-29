@@ -39,8 +39,7 @@ func TestRunEmitsComposables(t *testing.T) {
 	}
 }
 
-// The s99ab bridge is opt-in: absent by default so a non-s99ab app is not
-// handed a file it cannot resolve, present with -s99ab.
+// The s99ab bridge is opt-in, so a non-s99ab app is not handed a file it cannot resolve.
 func TestS99abBridgeIsOptIn(t *testing.T) {
 	bridge := "appearanceBridge.ts"
 

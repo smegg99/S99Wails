@@ -64,8 +64,7 @@ type Result struct {
 	X11Preferred   bool       // GDK_BACKEND was defaulted to x11
 }
 
-// Setup resolves the render path (user environment, then RenderPathVar, then
-// AppImageRenderPath inside an AppImage, then RenderPath) and applies PreferX11.
+// Setup resolves the render path (environment, RenderPathVar, AppImageRenderPath in an AppImage, RenderPath) and applies PreferX11.
 func Setup(o Options) Result {
 	res := Result{AppImage: launchedViaAppImage()}
 	if runtime.GOOS != "linux" {
@@ -113,8 +112,7 @@ func explicitlySet(key string) bool {
 	return ok
 }
 
-// preferX11OnPlasmaWayland defaults an unset GDK_BACKEND to x11 on Plasma Wayland and reports
-// whether it applied. Under XWayland GTK 3 paints at a fixed 60 Hz and one scale on every monitor.
+// preferX11OnPlasmaWayland sets an unset GDK_BACKEND to x11 on Plasma Wayland, where GTK 3 under XWayland paints at 60 Hz and one scale.
 func preferX11OnPlasmaWayland() bool {
 	if runtime.GOOS != "linux" {
 		return false

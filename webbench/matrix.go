@@ -11,15 +11,13 @@ import (
 	"strings"
 )
 
-// Config is one comparison row. WebKitGTK reads its render settings once at
-// startup, so each row runs in its own child process.
+// Config is one comparison row; WebKitGTK reads render settings once, so each row runs in its own process.
 type Config struct {
 	Label string
 	Env   map[string]string
 }
 
-// DefaultMatrix covers every render-path rung on both display backends. An empty
-// value unsets the variable: WebKit tests for presence, so "0" still disables.
+// DefaultMatrix covers every render-path rung on both backends; an empty value unsets, since WebKit tests presence.
 func DefaultMatrix() []Config {
 	rungs := []struct {
 		name string

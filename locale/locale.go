@@ -16,8 +16,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-// Locales holds a message bundle and the active localizer. It is safe for
-// concurrent use.
+// Locales holds a message bundle and the active localizer; safe for concurrent use.
 type Locales struct {
 	bundle        *goi18n.Bundle
 	defaultLocale string
@@ -28,8 +27,7 @@ type Locales struct {
 	onChange []func()
 }
 
-// New loads every *.json message file from the root of localeFS (typically an
-// embed.FS narrowed with fs.Sub) and selects defaultLocale.
+// New loads every *.json file at localeFS's root and selects defaultLocale.
 func New(localeFS fs.FS, defaultLocale string) (*Locales, error) {
 	tag, err := language.Parse(defaultLocale)
 	if err != nil {
@@ -60,8 +58,7 @@ func New(localeFS fs.FS, defaultLocale string) (*Locales, error) {
 	return l, nil
 }
 
-// SetLocale switches the active language (pl-PL matches pl, unknown falls back
-// to the default) and then fires OnChange callbacks.
+// SetLocale switches language (pl-PL matches pl, unknown falls back to the default) and fires OnChange.
 func (l *Locales) SetLocale(code string) {
 	if code == "" {
 		code = l.defaultLocale

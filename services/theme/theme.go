@@ -23,8 +23,7 @@ func (s *Service) GetTheme() accent.Info {
 	return currentTheme()
 }
 
-// RegisterThemeWatcher emits EventThemeChanged on theme or accent changes. stop
-// ends the accent watcher; the Wails listener lives as long as the app.
+// RegisterThemeWatcher emits EventThemeChanged on theme or accent changes; stop ends the accent watcher.
 func RegisterThemeWatcher(app *application.App) (stop func()) {
 	app.Event.OnApplicationEvent(events.Common.ThemeChanged, func(_ *application.ApplicationEvent) {
 		app.Event.Emit(EventThemeChanged, currentTheme())

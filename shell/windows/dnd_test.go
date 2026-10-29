@@ -1,3 +1,5 @@
+// shell/windows/dnd_test.go
+
 package windows
 
 import "testing"

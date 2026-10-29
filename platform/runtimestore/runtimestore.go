@@ -14,8 +14,7 @@ import (
 	"regexp"
 )
 
-// ErrUnavailable is a system with no usable runtime directory: no XDG_RUNTIME_DIR,
-// or one that is not a private directory of this user.
+// ErrUnavailable means no XDG_RUNTIME_DIR, or one that is not this user's private directory.
 var ErrUnavailable = errors.New("runtimestore: no private runtime directory")
 
 // ErrNotFound is a key with no value stored.

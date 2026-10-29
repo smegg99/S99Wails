@@ -28,8 +28,7 @@ func TestFileStoreRoundTrip(t *testing.T) {
 	}
 }
 
-// A state file that will not parse counts as nothing saved, so the next save
-// replaces it instead of warning on every start.
+// An unparsable state file counts as nothing saved.
 func TestFileStoreUnreadableCountsAsUnsaved(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "window.json")
 	if err := os.WriteFile(path, []byte("{not json"), 0o600); err != nil {

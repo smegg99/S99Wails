@@ -50,8 +50,7 @@ import (
 // ErrNoWindow reports a window with no GTK toplevel to watch.
 var ErrNoWindow = errors.New("editkeys: no GTK window")
 
-// Each callback belongs to its native window. GTK destruction, rather than
-// a cancellable close request, removes it.
+// Each callback belongs to its native window and is removed on GTK destruction, not on a cancellable close.
 var windows sync.Map // uint -> *application.WebviewWindow
 
 // The targets hook is the whole process's, added with the first window shown.
@@ -73,7 +72,7 @@ func Watch(win *application.WebviewWindow, onError func(error)) {
 	})
 }
 
-// cgo writes a C prototype from these names, so none of them may be blank.
+// cgo writes a C prototype from these names, so none may be blank.
 //
 //export editkeysPress
 func editkeysPress(widget *C.GtkWidget, event *C.GdkEventKey, data C.gpointer) C.gboolean {

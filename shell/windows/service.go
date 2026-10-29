@@ -40,8 +40,7 @@ type Service struct {
 	nextHandle  uintptr
 }
 
-// Options inject application persistence and account identity. The library
-// never reads credentials, application documents or layout payloads.
+// Options inject the app's persistence and identity; the library never reads credentials, documents or layouts.
 type Options struct {
 	Owner                              func() string
 	Layouts                            func(owner string) []SavedWindow

@@ -17,8 +17,7 @@ const (
 	sourcePage   = "frontend"
 )
 
-// Beat tells the watcher the app is up, then beats from the main thread every 2 s until the app
-// quits or stop is called. Call it after application.New, which runs the single-instance check.
+// Beat reports the app up, then beats from the main thread every 2 s until quit or stop; call it after application.New.
 func Beat() (stop func()) {
 	ctx := context.Background()
 	if app := application.Get(); app != nil {

@@ -18,8 +18,7 @@ import (
 // watcherEnv carries the watched process's pid to the watcher copy.
 const watcherEnv = "S99_CRASH_WATCHER"
 
-// Watch starts a watcher copy of this program that shows the screen when this process crashes, stops
-// responding or is killed. Call it first in main: in the watcher copy it never returns.
+// Watch starts a watcher copy of this program that shows the screen on a crash, hang or kill; call it first in main.
 func Watch(opts Options) error {
 	if pid, ok := becomeWatcher(); ok {
 		signal.Ignore(os.Interrupt)
@@ -98,8 +97,7 @@ const (
 	eventEnd   = "end"
 )
 
-// readPipe turns the pipe into events. A framed line can land inside the runtime's output, so the
-// text before a marker is trace.
+// readPipe turns the pipe into events; text before a marker is trace, since a line can land inside runtime output.
 func readPipe(r io.Reader, events chan<- event) {
 	in := bufio.NewReaderSize(r, 64<<10)
 	for {

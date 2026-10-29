@@ -1,3 +1,5 @@
+// traygen/native_test.go
+
 package main
 
 import (

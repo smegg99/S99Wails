@@ -24,6 +24,8 @@ extracted once, so the next app imports it instead. Pairs well with
 - `platform/notify`: lazy Linux notification transport shared by native callers;
   failures remain errors, and the next send reconnects. Other platforms return
   `errors.ErrUnsupported`.
+- `platform/runtimestore`: small per-user values under `$XDG_RUNTIME_DIR`,
+  private to the user and cleared at logout.
 - `platform/autostart`: launch on login, per user, no elevation. XDG `.desktop`,
   registry Run key, LaunchAgent.
 - `platform/env`: WebKitGTK DMABUF workaround, AppImage detection, opt-in X11

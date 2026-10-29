@@ -15,8 +15,7 @@ var (
 	displayRe = regexp.MustCompile(`display:\s*[^;]+;?`)
 )
 
-// ApplySlots recolors and shows each declared inkscape:label slot with a color,
-// hides the rest, and errors on declared slots missing from the document.
+// ApplySlots colors and shows each declared inkscape:label slot, hides the rest, and errors on a missing one.
 func ApplySlots(svgData []byte, declared []string, colors map[string]string) ([]byte, error) {
 	doc := etree.NewDocument()
 	if err := doc.ReadFromBytes(svgData); err != nil {

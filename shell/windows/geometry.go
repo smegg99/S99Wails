@@ -14,8 +14,7 @@ type Monitor struct {
 	Primary bool
 }
 
-// Place restores a window to its monitor, or the primary monitor if that one
-// disappeared. The whole rectangle is kept within the chosen work area.
+// Place restores a window to its monitor, or the primary when that one is gone, inside the work area.
 func Place(saved Rect, monitor string, monitors []Monitor, minWidth, minHeight int) Rect {
 	if len(monitors) == 0 {
 		return saved

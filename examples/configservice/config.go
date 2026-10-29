@@ -27,8 +27,7 @@ var (
 	resolvedCfg string
 )
 
-// Initialize loads .env if present, validates the config against the embedded
-// schema (writing a default when missing) and returns the config path.
+// Initialize loads .env, validates the config against the embedded schema (writing a default when missing) and returns its path.
 func Initialize() (string, error) {
 	_ = godotenv.Load()
 
@@ -98,8 +97,7 @@ func decode() error {
 	return nil
 }
 
-// resolveConfigPath returns the config file path from CONFIG_PATH (file or
-// directory) or the portable default in the working directory.
+// resolveConfigPath reads CONFIG_PATH (a file or directory), else the portable default in the working directory.
 func resolveConfigPath() string {
 	if p := os.Getenv("CONFIG_PATH"); p != "" {
 		if info, err := os.Stat(p); err == nil && info.IsDir() {

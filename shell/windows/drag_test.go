@@ -1,3 +1,5 @@
+// shell/windows/drag_test.go
+
 package windows
 
 import "testing"

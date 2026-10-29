@@ -51,8 +51,7 @@ import (
 	"unsafe"
 )
 
-// active is package state because only one run per process is valid: the render
-// path environment is read once at GTK and WebKit startup.
+// active is package state because the render environment is read once at GTK and WebKit startup.
 var active *runState
 
 type runState struct {
@@ -65,8 +64,7 @@ type runState struct {
 	polling bool
 }
 
-// Run loads opts.URL in a WebKitGTK window and returns the probe's measurements.
-// Call it from the main goroutine; it locks the OS thread for GTK.
+// Run loads opts.URL in a WebKitGTK window and returns the probe's measurements; call it from the main goroutine.
 func Run(opts Options) (Result, error) {
 	opts.withDefaults()
 	if opts.URL == "" {

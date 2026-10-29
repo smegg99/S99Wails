@@ -1,3 +1,5 @@
+// shell/windows/signal.go
+
 package windows
 
 import (
@@ -7,8 +9,7 @@ import (
 	"time"
 )
 
-// QuitOnSignal replaces Wails' handler (set DisableDefaultSignalHandler): SIGINT or SIGTERM quits
-// as the tray's Quit does, and the process exits once grace passes or on a second signal.
+// QuitOnSignal quits on SIGINT or SIGTERM as the tray does, exiting after grace or on a second signal; set DisableDefaultSignalHandler.
 func QuitOnSignal(s *Service, grace time.Duration) {
 	signals := make(chan os.Signal, 2)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)

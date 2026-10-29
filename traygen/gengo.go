@@ -13,8 +13,7 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-// goName converts a state name to an exported Go identifier suffix:
-// "no-badge" -> "NoBadge".
+// goName turns a state name into a Go identifier suffix: no-badge becomes NoBadge.
 func goName(s string) string {
 	parts := strings.FieldsFunc(s, func(r rune) bool { return r == '-' || r == '_' })
 	var b strings.Builder

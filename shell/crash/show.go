@@ -9,8 +9,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// Show opens the screen for f in this process and returns once it is closed. Call it only when no other
-// Wails application was created.
+// Show opens the screen for f in this process until it closes; only when no other Wails application exists.
 func Show(opts Options, f Failure) error {
 	svc := newService(opts, build(opts, f, described(), local.snapshot(), time.Now()), controls{})
 	app, window := newApp(opts, svc)
@@ -77,8 +76,7 @@ func (s *wailsScreen) quit() {
 	}
 }
 
-// run starts the screen with first and blocks until it quits. Closing the window while the process
-// still runs means Wait.
+// run starts the screen with first and blocks until it quits; closing the window while the app runs means Wait.
 func (s *wailsScreen) run(first Report) error {
 	s.svc = newService(s.opts, first, s.ctl)
 	s.app, s.window = newApp(s.opts, s.svc)

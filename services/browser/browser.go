@@ -1,7 +1,6 @@
 // services/browser/browser.go
 
-// Package browser opens URLs in the system browser; target="_blank" in a Wails
-// webview navigates the webview instead.
+// Package browser opens URLs in the system browser, since target="_blank" navigates the webview itself.
 package browser
 
 import (

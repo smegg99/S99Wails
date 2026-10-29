@@ -1,7 +1,8 @@
+// shell/windows/drag.go
+
 package windows
 
-// Strip describes untransformed tab positions relative to the webview. Pinned
-// tabs occupy slots but cannot be displaced by an incoming tab.
+// Strip is the untransformed tab layout relative to the webview; pinned tabs hold slots an incoming tab cannot take.
 type Strip struct {
 	Bounds Rect      `json:"bounds"`
 	Tabs   []TabRect `json:"tabs"`

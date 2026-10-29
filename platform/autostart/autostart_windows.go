@@ -13,8 +13,7 @@ import (
 
 const runKey = `Software\Microsoft\Windows\CurrentVersion\Run`
 
-// command joins the Exec args for the Run value. Arguments containing a double
-// quote are rejected because they cannot be escaped there.
+// command joins the Exec args for the Run value, refusing a double quote, which cannot be escaped there.
 func command(opts Options) (string, error) {
 	parts := make([]string, len(opts.Exec))
 	for i, arg := range opts.Exec {

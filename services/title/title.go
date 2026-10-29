@@ -71,8 +71,7 @@ func (s *Service) stateLocked(id uint) *windowTitle {
 	return s.states[id]
 }
 
-// Set replaces the phrase after the base name; empty shows the base alone. The
-// error is always nil and exists for the generated binding.
+// Set replaces the phrase after the base name, empty showing the base alone; the nil error is for the binding.
 func (s *Service) Set(ctx context.Context, text string) error {
 	s.mu.Lock()
 	id := s.windowID(ctx)

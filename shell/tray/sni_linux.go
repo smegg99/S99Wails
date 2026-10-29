@@ -29,8 +29,7 @@ const (
 	dbusmenuVersion = uint32(3)
 )
 
-// sni is a StatusNotifierItem with a dbusmenu on its own session-bus connection.
-// Wails' Linux tray publishes only a pixmap, which the panel cannot draw as SVG.
+// sni is a StatusNotifierItem with a dbusmenu on its own bus connection, since Wails publishes only a pixmap.
 type sni struct {
 	name    string
 	busName string
@@ -67,8 +66,7 @@ func newSNI(name string, opts Options) *sni {
 	}
 }
 
-// start exports the item and registers it with the panel, now and whenever a
-// panel (re)starts.
+// start exports the item and registers it with the panel, now and whenever a panel restarts.
 func (s *sni) start() error {
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
@@ -160,8 +158,7 @@ func exportIntrospection(conn *dbus.Conn, props, menuProps *prop.Properties) err
 	return nil
 }
 
-// watch registers with the current panel and again with every new one, until
-// the connection closes.
+// watch registers with the current panel and every new one until the connection closes.
 func (s *sni) watch(conn *dbus.Conn, signals <-chan *dbus.Signal) {
 	s.register(conn)
 	for sig := range signals {

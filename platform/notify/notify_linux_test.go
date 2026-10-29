@@ -30,8 +30,7 @@ func (s *server) Notify(app string, _ uint32, _ string, title, body string, _ []
 	return 1, nil
 }
 
-// busConfig is a session bus that starts no service on demand, so no
-// notification server installed on this machine is ever started by a test.
+// busConfig is a session bus that starts no service on demand, so tests never start a real notification server.
 const busConfig = `<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
 <busconfig>

@@ -1,7 +1,6 @@
 // services/logger/logger.go
 
-// Package logger is a Wails-bound service bridging frontend log calls to
-// s99logger.
+// Package logger is a Wails-bound service passing frontend log calls to s99logger.
 package logger
 
 import "github.com/smegg99/s99logger"

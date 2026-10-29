@@ -12,8 +12,7 @@ import (
 	resvg "github.com/kanrichan/resvg-go"
 )
 
-// Renderer rasterizes SVGs with resvg in wasm, byte-identical across machines,
-// and memoizes per (svg, size). It is not safe for concurrent use.
+// Renderer rasterizes SVGs with resvg in wasm, byte-identical across machines, memoized per svg and size; not concurrent-safe.
 type Renderer struct {
 	ctx   *resvg.Context
 	r     *resvg.Renderer

@@ -37,8 +37,7 @@ type Info struct {
 	Ready bool   `json:"ready"`
 }
 
-// Offer stays owned by Source until Target acknowledges that its view is ready.
-// Payload is transient frontend state, never logged or persisted by this package.
+// Offer stays Source's until Target acknowledges its view; Payload is transient and never logged or stored.
 type Offer struct {
 	ID      string          `json:"id"`
 	Source  string          `json:"source"`
@@ -113,8 +112,7 @@ func (r *Registry) List() []Info {
 	return out
 }
 
-// Reset withdraws all transfers and readiness when the application changes
-// workspace owner. Native surfaces remain until the owner restores its layout.
+// Reset withdraws all transfers and readiness when the workspace owner changes; surfaces stay until the owner restores.
 func (r *Registry) Reset() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -155,8 +153,7 @@ func (r *Registry) Move(source, target, tab string, slot int, payload json.RawMe
 	return clone(offer), nil
 }
 
-// Claim permits only the destination to release the original view. Repeated
-// acknowledgements are harmless; a release missed during reload is replayed.
+// Claim lets only the destination release the original view; repeats are harmless and a release missed in a reload is replayed.
 func (r *Registry) Claim(target, id string) error {
 	r.mu.Lock()
 	offer, ok := r.offers[id]

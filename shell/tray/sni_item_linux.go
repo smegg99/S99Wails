@@ -95,8 +95,7 @@ func (s *sni) setTooltip(text string) {
 	s.report(err)
 }
 
-// publish sets an exported property and sends the item signal hosts listen for; the caller holds mu
-// and reports the error after unlocking it, so an OnError may call back into the item.
+// publish sets a property and sends its signal; the caller holds mu and reports the error after unlocking, so OnError may call back.
 func (s *sni) publish(iface, name string, value any, signal string) (err error) {
 	if s.props == nil {
 		return nil

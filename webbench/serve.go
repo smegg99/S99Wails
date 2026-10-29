@@ -11,8 +11,7 @@ import (
 	"strings"
 )
 
-// Serve publishes a built SPA over plain loopback HTTP (file:// breaks module
-// scripts and fetch) and returns its URL and a stop function.
+// Serve publishes a built SPA over loopback HTTP, since file:// breaks module scripts and fetch.
 func Serve(dir string) (url string, stop func(), err error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {

@@ -30,8 +30,7 @@ const (
 	lineQuit    = "quit"
 )
 
-// pipe writes a line at once when the pipe has room and nothing is queued, so a runtime crash
-// right after it cannot lose it; otherwise one goroutine writes the queue. No caller blocks on it.
+// pipe writes a line at once when there is room and no queue, else one goroutine writes the queue; no caller blocks.
 type pipe struct {
 	w       *os.File
 	lines   chan string
@@ -113,8 +112,7 @@ func Done() {
 	finish(p, frame(lineBye, ""), time.Second)
 }
 
-// finish drains p and writes text last; each step gives up after timeout, so a watcher that
-// stopped reading never keeps the process from exiting.
+// finish drains p and writes text last, each step bounded by timeout so a gone watcher never blocks exit.
 func finish(p *pipe, text string, timeout time.Duration) {
 	drain(p, timeout)
 	_ = p.w.SetWriteDeadline(time.Now().Add(timeout))

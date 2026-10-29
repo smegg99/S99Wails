@@ -2,12 +2,7 @@
 
 //go:build linux
 
-// Command s99webbench measures a page inside WebKitGTK and compares render paths.
-// It needs cgo, gtk3, webkit2gtk-4.1 and a display.
-//
-//	s99webbench --dir desktop/frontend/.output/public --matrix
-//	s99webbench --url http://127.0.0.1:3400/
-//	s99webbench --dir dist --workload synthetic --matrix
+// Command s99webbench measures a page in WebKitGTK and compares render paths; it needs cgo, gtk3, webkit2gtk-4.1 and a display.
 package main
 
 import (

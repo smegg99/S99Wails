@@ -1,7 +1,6 @@
 // examples/accentwatch/main.go
 
-// Watches the OS for accent and color-scheme changes. Flip the accent color
-// or dark mode in your system settings, Ctrl-C to quit.
+// Watches the OS accent and color scheme; change them in system settings, Ctrl-C quits.
 package main
 
 import (

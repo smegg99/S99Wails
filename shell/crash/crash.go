@@ -1,8 +1,6 @@
 // shell/crash/crash.go
 
-// Package crash opens the app's own frontend as an error screen when the app cannot start, dies from a
-// panic, stops responding, or is killed. It gathers the report and runs its actions; the screen itself
-// belongs to the frontend.
+// Package crash shows the app's own frontend as an error screen after a failed start, panic, hang or kill.
 package crash
 
 import (

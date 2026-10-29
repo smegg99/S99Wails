@@ -57,8 +57,7 @@ func (s *sni) setMenu(items []Item) {
 	s.report(err)
 }
 
-// run calls an application action off the bus goroutine. Wails' window and
-// app methods dispatch to the GUI thread themselves.
+// run calls an application action off the bus goroutine; Wails dispatches window and app methods itself.
 func (s *sni) run(action func()) {
 	if action == nil {
 		return
@@ -79,8 +78,7 @@ func (s *sni) click(id int32) bool {
 	return true
 }
 
-// node is a menu entry's layout; id 0 is the root, entries count from 1. The
-// caller holds mu.
+// node is a menu entry's layout, id 0 the root; the caller holds mu.
 func (s *sni) node(id int32, depth int32) (menuNode, bool) {
 	if id == 0 {
 		root := menuNode{ID: 0, Properties: map[string]dbus.Variant{

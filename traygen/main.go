@@ -1,9 +1,6 @@
 // traygen/main.go
 
-// traygen generates tray icons per theme and state from labeled SVGs, with Go accessors and preview
-// sheets. Run next to a trayicons.cue (format: schema.cue):
-//
-//	//go:generate go tool traygen
+// traygen generates tray icons per theme and state from labeled SVGs, with Go accessors and previews, from a trayicons.cue.
 package main
 
 import (

@@ -44,12 +44,10 @@ import (
 // ErrNoWebView reports a window with no WebKitWebView inside it to watch.
 var ErrNoWebView = errors.New("mousenav: no webview in the window")
 
-// Each callback belongs to its native window. GTK destruction, rather than
-// a cancellable close request, removes it.
+// Each callback belongs to its native window and is removed on GTK destruction, not on a cancellable close.
 var windows sync.Map // uint -> *application.WebviewWindow
 
-// Watch sends the window's side buttons as EventStep from the first time it is
-// shown; the page never receives them, since WebKitGTK hands it both as one.
+// Watch sends the side buttons as EventStep from the first show, since WebKitGTK hands the page both as one.
 func Watch(win *application.WebviewWindow, onError func(error)) {
 	windows.Store(win.ID(), win)
 	var once sync.Once
@@ -64,7 +62,7 @@ func Watch(win *application.WebviewWindow, onError func(error)) {
 	})
 }
 
-// cgo writes a C prototype from these names, so none of them may be blank.
+// cgo writes a C prototype from these names, so none may be blank.
 //
 //export mousenavButton
 func mousenavButton(widget *C.GtkWidget, event *C.GdkEventButton, data C.gpointer) C.gboolean {

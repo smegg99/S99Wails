@@ -16,8 +16,7 @@ const (
 	AppleDefaultsSource   ColorSource = "apple-defaults"
 )
 
-// Scheme is the OS color-scheme preference. Unlike a plain dark-mode bool it
-// preserves "no preference", which is a real state on Linux.
+// Scheme is the OS color-scheme preference, keeping "no preference", a real state on Linux.
 type Scheme string
 
 const (
@@ -46,14 +45,12 @@ func GetAccentColor() Color {
 	return getAccentColor()
 }
 
-// DetectScheme returns the OS color-scheme preference. The second return
-// value is false when the check is inconclusive (unsupported platform).
+// DetectScheme returns the OS color-scheme preference, or false when the check is inconclusive.
 func DetectScheme() (Scheme, bool) {
 	return detectScheme()
 }
 
-// DetectDarkMode reports dark mode from native APIs; ok is false when
-// unsupported or the user has no preference.
+// DetectDarkMode reports dark mode from native APIs; ok is false when unsupported or unset.
 func DetectDarkMode() (dark bool, ok bool) {
 	scheme, ok := detectScheme()
 	if !ok || scheme == SchemeNoPreference {

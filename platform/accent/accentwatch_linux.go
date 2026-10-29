@@ -107,8 +107,7 @@ func watchAccentChanges(onChange func()) (stop func()) {
 	}
 }
 
-// timerC returns the timer's channel or nil so the select arm is
-// disabled when no debounce timer is currently armed.
+// timerC returns the timer's channel, or nil to disable the select arm while no timer is armed.
 func timerC(t *time.Timer) <-chan time.Time {
 	if t == nil {
 		return nil

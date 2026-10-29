@@ -1,3 +1,5 @@
+// shell/windows/placement.go
+
 package windows
 
 import "github.com/wailsapp/wails/v3/pkg/application"
@@ -8,8 +10,7 @@ type Geometry struct {
 	Monitor             string
 }
 
-// PlaceWindow clamps a saved rectangle against the monitors currently present.
-// Call only once the GUI is running.
+// PlaceWindow clamps a saved rectangle to the monitors present; call it only once the GUI runs.
 func PlaceWindow(win *application.WebviewWindow, geometry *Geometry, minWidth, minHeight int) {
 	monitors := []Monitor{}
 	for _, screen := range application.Get().Screen.GetAll() {

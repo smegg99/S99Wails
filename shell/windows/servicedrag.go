@@ -1,3 +1,5 @@
+// shell/windows/servicedrag.go
+
 package windows
 
 import (
@@ -19,16 +21,14 @@ type nativeDrag struct {
 	version int
 }
 
-// dragImage is a PNG drawn at scale device pixels per logical pixel, held at
-// X, Y logical pixels from its top left corner.
+// dragImage is a PNG at scale device pixels per logical pixel, held at X, Y from its top left.
 type dragImage struct {
 	png   []byte
 	scale int
 	x, y  int
 }
 
-// Track tells the source window, while the native drag holds the pointer, whether it
-// is outside or back over the window at X, Y in its own coordinates.
+// Track tells the source window whether the pointer is outside or back over it at X, Y in its own coordinates.
 type Track struct {
 	Inside bool `json:"inside"`
 	X      int  `json:"x"`
@@ -41,8 +41,7 @@ func init() {
 	application.RegisterEvent[Track](eventTabTrack)
 }
 
-// DragImage hands the native drag the picture it carries outside the source
-// window: a base64 PNG at scale device pixels per logical pixel, held at x, y.
+// DragImage hands the native drag its picture outside the source: a base64 PNG at scale, held at x, y.
 func (s *Service) DragImage(ctx context.Context, id, png string, scale, x, y int) error {
 	return s.dragImage(CallingName(ctx), id, png, scale, x, y)
 }
@@ -83,8 +82,7 @@ func (s *Service) Strip(ctx context.Context, strip Strip) {
 	s.strips[CallingName(ctx)] = strip
 }
 
-// BeginDrag follows the pointer across windows: the global pointer on X11, GTK drag and
-// drop on Wayland. False means neither is available; face reaches each hover as Drop.Face.
+// BeginDrag follows the pointer across windows (global pointer on X11, GTK dnd on Wayland); false means neither is available.
 func (s *Service) BeginDrag(ctx context.Context, owner, id, tab, face string) (bool, error) {
 	if err := s.owns(owner); err != nil {
 		return false, err

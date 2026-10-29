@@ -23,8 +23,7 @@ const (
 	sheetGutter  = 64 // px on the left for theme row labels
 )
 
-// WriteSheet renders preview.png, a themes x states sheet of primary-size icons
-// on a neutral gray background.
+// WriteSheet renders preview.png, a themes x states grid of primary-size icons on gray.
 func WriteSheet(cfg *Config, variants []Variant, r *Renderer, outDir string) error {
 	themes := cfg.ThemeNames()
 	states := cfg.StateNames()

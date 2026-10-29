@@ -36,8 +36,7 @@ type dndEvent struct {
 	x, y, result int
 }
 
-// dndSink queues the GTK callbacks of the one drag in progress. Posting from the GUI thread never
-// blocks and nothing is dropped: a motion only replaces the motion queued right before it.
+// dndSink queues the current drag's GTK callbacks without blocking or dropping; a motion replaces only the motion before it.
 var dndSink struct {
 	mu     sync.Mutex
 	wake   chan struct{}
@@ -87,9 +86,7 @@ func dndTake() []dndEvent {
 	return events
 }
 
-// dragEnding is the event the source window gets when GTK ends the drag. Wayland reports a drop
-// outside the app and Escape as one cancellation; both tear the tab off, as on X11. A drag GTK
-// broke (grab lost, timeout, error) ends with the tab left in place.
+// dragEnding is the source's end event: a drop outside or Escape tears the tab off, a drag GTK broke leaves it in place.
 func dragEnding(d *nativeDrag, dropped *Drop, failed int) (string, any) {
 	switch failed {
 	case dragResultTimeoutExpired, dragResultGrabBroken, dragResultError:

@@ -12,8 +12,7 @@ import (
 	"time"
 )
 
-// sampleCPU returns a stop function giving each named process's average CPU.
-// It matches by name because WebKit spawns its processes after load starts.
+// sampleCPU returns a stop function giving each named process's average CPU, matched by name since WebKit spawns late.
 func sampleCPU(names []string) func() map[string]float64 {
 	type mark struct {
 		firstTicks, lastTicks uint64

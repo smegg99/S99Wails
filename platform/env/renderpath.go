@@ -8,8 +8,7 @@ package env
 
 import "os"
 
-// RenderPath selects how composited frames reach the UI process. The zero value
-// is Auto.
+// RenderPath selects how composited frames reach the UI process; the zero value is Auto.
 type RenderPath int
 
 const (
@@ -66,8 +65,7 @@ func applyRenderPath(p RenderPath) {
 	}
 }
 
-// renderPathFromEnv reports the rung already set in the environment. Legacy is
-// checked first: WebKit tests it for presence, so any value disables the renderer.
+// renderPathFromEnv reports the rung already set; Legacy goes first because WebKit tests it for presence.
 func renderPathFromEnv() (RenderPath, bool) {
 	for _, p := range []RenderPath{RenderPathLegacy, RenderPathSHM, RenderPathNoGBM} {
 		for _, key := range renderPathVars[p] {
@@ -79,8 +77,7 @@ func renderPathFromEnv() (RenderPath, bool) {
 	return RenderPathAuto, false
 }
 
-// debugRendering enables WebKitGTK's frame counter and damage overlays. Call
-// before the GUI initializes.
+// debugRendering turns on WebKitGTK's frame counter and damage overlays; call it before the GUI starts.
 func debugRendering() {
 	setDefault("WEBKIT_SHOW_FPS", "1")
 	setDefault("WEBKIT_SHOW_DAMAGE", "1")
