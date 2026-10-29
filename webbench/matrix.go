@@ -6,10 +6,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
-	"sort"
 	"strings"
 )
 
@@ -55,22 +53,14 @@ func DefaultMatrix() []Config {
 // ChildEnvVar marks a re-executed child process.
 const ChildEnvVar = "S99WEBBENCH_CHILD"
 
-// Matrix re-executes exe once per config; the child calls Run and prints
-// Result.MarshalLine. Child stderr is passed through.
-func Matrix(exe string, args []string, configs []Config, progress io.Writer) ([]Result, error) {
-	results := make([]Result, 0, len(configs))
-	for _, cfg := range configs {
-		if progress != nil {
-			fmt.Fprintf(progress, "running: %s\n", cfg.Label)
-		}
-		res, err := runChild(exe, args, cfg)
-		if err != nil {
-			res = Result{Label: cfg.Label, Error: err.Error()}
-		}
-		res.Label = cfg.Label
-		results = append(results, res)
+// Child runs exe with args in cfg's environment and returns the Result it prints, or one with Error set.
+func Child(exe string, args []string, cfg Config) Result {
+	res, err := runChild(exe, args, cfg)
+	if err != nil {
+		res = Result{Error: err.Error()}
 	}
-	return results, nil
+	res.Label = cfg.Label
+	return res
 }
 
 func runChild(exe string, args []string, cfg Config) (Result, error) {
@@ -122,44 +112,4 @@ func childEnv(overrides map[string]string) []string {
 		}
 	}
 	return append(env, ChildEnvVar+"=1")
-}
-
-// Compare renders results fastest first, with each frame rate as a ratio to the slowest.
-func Compare(results []Result) string {
-	ordered := append([]Result(nil), results...)
-	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].FPS > ordered[j].FPS })
-
-	worst := 0.0
-	for _, r := range ordered {
-		if r.FPS > 0 && (worst == 0 || r.FPS < worst) {
-			worst = r.FPS
-		}
-	}
-
-	var b strings.Builder
-	fmt.Fprintf(&b, "%-38s %7s %8s %8s %9s %9s %9s\n",
-		"configuration", "fps", "p95 ms", "worst", "load ms", "style ms", "gpu %")
-	b.WriteString(strings.Repeat("-", 94) + "\n")
-	for _, r := range ordered {
-		ratio := ""
-		if worst > 0 && r.FPS > 0 {
-			ratio = fmt.Sprintf("  (%.1fx)", r.FPS/worst)
-		}
-		if r.Error != "" && r.FPS == 0 {
-			fmt.Fprintf(&b, "%-38s %7s %8s %8s %9s %9s %9s   %s\n",
-				truncate(r.Label, 38), "-", "-", "-", "-", "-", "-", r.Error)
-			continue
-		}
-		fmt.Fprintf(&b, "%-38s %7.1f %8.1f %8.1f %9.0f %9.1f %9.1f%s\n",
-			truncate(r.Label, 38), r.FPS, r.FrameP95MS, r.FrameWorstMS,
-			r.LoadFinishedMS, r.StyleRecalcMS, r.CPU["WebKitGPUProcess"], ratio)
-	}
-	return b.String()
-}
-
-func truncate(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n-3] + "..."
 }

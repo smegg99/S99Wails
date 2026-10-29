@@ -7,7 +7,6 @@ package webbench
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -108,19 +107,6 @@ type Result struct {
 
 	Timeout bool   `json:"timeout,omitempty"`
 	Error   string `json:"error,omitempty"`
-}
-
-func (r Result) String() string {
-	return fmt.Sprintf(`%s
-  load        finished %.0fms  dcl %.0fms  load %.0fms  fp %.0fms  fcp %.0fms
-  frames      %.1f fps   p50 %.1fms  p95 %.1fms  worst %.1fms  (n=%d)
-  cost        style-recalc %.1fms  layout-thrash %.1fms  script %.1fms  reactivity %.1fms
-  page        %d nodes  %d css rules across %d sheets`,
-		r.Label,
-		r.LoadFinishedMS, r.DOMContentMS, r.LoadEventMS, r.FirstPaintMS, r.FCPMS,
-		r.FPS, r.FrameP50MS, r.FrameP95MS, r.FrameWorstMS, r.FramesCounted,
-		r.StyleRecalcMS, r.LayoutThrashMS, r.ScriptMS, r.ReactivityMS,
-		r.Nodes, r.CSSRules, r.Stylesheets)
 }
 
 // MarshalLine is the child-process wire format: one JSON object per line.

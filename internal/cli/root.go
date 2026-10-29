@@ -18,17 +18,8 @@ func (a *App) Root(cmd *cobra.Command) *cobra.Command {
 	cmd.SetOut(a.data)
 	cmd.SetErr(a.out)
 	cmd.SetFlagErrorFunc(func(_ *cobra.Command, err error) error { return Usage(err) })
-	// --lang fires during flag parsing, before cobra answers --help.
-	cmd.PersistentFlags().Func("lang", "", func(value string) error {
-		match, ok := catalog.Supported(value)
-		if !ok {
-			return errors.New(catalog.CliErrUnsupportedLanguage(a.Say(), catalog.CliErrUnsupportedLanguageParams{
-				Lang: value, Supported: strings.Join(catalog.Locales, ", "),
-			}))
-		}
-		a.localize(match)
-		return nil
-	})
+	// --lang applies during flag parsing, before cobra answers --help.
+	cmd.PersistentFlags().Var(langFlag{a}, "lang", "")
 	// Registered now, or Find takes --help for a flag with a value and swallows --lang.
 	cmd.InitDefaultHelpFlag()
 	a.Describe(func(l *i18n.Localizer) {
@@ -38,6 +29,29 @@ func (a *App) Root(cmd *cobra.Command) *cobra.Command {
 	})
 	a.localize(catalog.FromEnv(a.env))
 	return cmd
+}
+
+// langFlag is --lang: setting it switches the App's language, and it reads back as the language picked.
+type langFlag struct{ a *App }
+
+func (f langFlag) String() string {
+	if f.a == nil {
+		return ""
+	}
+	return f.a.language
+}
+
+func (f langFlag) Type() string { return "string" }
+
+func (f langFlag) Set(value string) error {
+	match, ok := catalog.Supported(value)
+	if !ok {
+		return errors.New(catalog.CliErrUnsupportedLanguage(f.a.Say(), catalog.CliErrUnsupportedLanguageParams{
+			Lang: value, Supported: strings.Join(catalog.Locales, ", "),
+		}))
+	}
+	f.a.localize(match)
+	return nil
 }
 
 // NoArgs answers a stray positional in the reader's language, as a usage error.

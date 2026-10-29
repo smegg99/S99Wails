@@ -5,120 +5,156 @@
 // Command s99webbench measures a page inside WebKitGTK and compares render paths.
 // It needs cgo, gtk3, webkit2gtk-4.1 and a display.
 //
-//	s99webbench -dir desktop/frontend/.output/public -matrix
-//	s99webbench -url http://127.0.0.1:3400/
-//	s99webbench -dir dist -workload synthetic -matrix
+//	s99webbench --dir desktop/frontend/.output/public --matrix
+//	s99webbench --url http://127.0.0.1:3400/
+//	s99webbench --dir dist --workload synthetic --matrix
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"flag"
+	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/smegg99/s99term"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+
+	"github.com/smegg99/s99wails/v2/internal/cli"
+	"github.com/smegg99/s99wails/v2/internal/cli/catalog"
 	"github.com/smegg99/s99wails/v2/webbench"
 )
 
+type options struct {
+	url, dir, workload, gpu string
+	frames                  time.Duration
+	width, height           int
+	matrix, json, console   bool
+}
+
 func main() {
-	var (
-		url      = flag.String("url", "", "URL to measure")
-		dir      = flag.String("dir", "", "directory of a built SPA to serve over loopback and measure")
-		workload = flag.String("workload", "page", "page (drive the page's own content) or synthetic (build a list first)")
-		frames   = flag.Duration("frames", 5*time.Second, "how long to count frames")
-		width    = flag.Int("width", 1280, "window width")
-		height   = flag.Int("height", 820, "window height")
-		gpu      = flag.String("gpu", "always", "hardware acceleration policy: always, ondemand, never")
-		matrix   = flag.Bool("matrix", false, "run the default render-path comparison, one child process per configuration")
-		asJSON   = flag.Bool("json", false, "print results as JSON")
-		console  = flag.Bool("console", false, "mirror the page's console to stdout")
-	)
-	flag.Parse()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	a := cli.New(os.Stderr, os.Stdout, os.Environ())
+	code := a.Run(ctx, newRoot(a), os.Args[1:])
+	stop()
+	os.Exit(code)
+}
 
-	if *url == "" && *dir == "" {
-		fmt.Fprintln(os.Stderr, "s99webbench: one of -url or -dir is required")
-		flag.Usage()
-		os.Exit(2)
+func newRoot(a *cli.App) *cobra.Command {
+	var o options
+	cmd := &cobra.Command{
+		Use:  "s99webbench",
+		Args: a.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if o.url == "" && o.dir == "" {
+				return cli.Usage(errors.New(catalog.WebbenchErrTarget(a.Say())))
+			}
+			// A matrix run re-executes itself once per configuration.
+			if o.matrix && os.Getenv(webbench.ChildEnvVar) == "" {
+				return runMatrix(a, childArgs(cmd), o.json)
+			}
+			return measure(a, o)
+		},
 	}
+	f := cmd.Flags()
+	f.StringVar(&o.url, "url", "", "")
+	f.StringVar(&o.dir, "dir", "", "")
+	f.StringVar(&o.workload, "workload", "page", "")
+	f.DurationVar(&o.frames, "frames", 5*time.Second, "")
+	f.IntVar(&o.width, "width", 1280, "")
+	f.IntVar(&o.height, "height", 820, "")
+	f.StringVar(&o.gpu, "gpu", "always", "")
+	f.BoolVar(&o.matrix, "matrix", false, "")
+	f.BoolVar(&o.json, "json", false, "")
+	f.BoolVar(&o.console, "console", false, "")
+	a.Describe(func(l *i18n.Localizer) {
+		cmd.Short, cmd.Long = catalog.WebbenchShort(l), catalog.WebbenchLong(l)
+		for name, usage := range map[string]string{
+			"url": catalog.WebbenchFlagUrl(l), "dir": catalog.WebbenchFlagDir(l),
+			"workload": catalog.WebbenchFlagWorkload(l), "frames": catalog.WebbenchFlagFrames(l),
+			"width": catalog.WebbenchFlagWidth(l), "height": catalog.WebbenchFlagHeight(l),
+			"gpu": catalog.WebbenchFlagGpu(l), "matrix": catalog.WebbenchFlagMatrix(l),
+			"json": catalog.WebbenchFlagJson(l), "console": catalog.WebbenchFlagConsole(l),
+		} {
+			f.Lookup(name).Usage = usage
+		}
+	})
+	return a.Root(cmd)
+}
 
-	// A matrix run re-executes itself once per configuration.
-	if *matrix && os.Getenv(webbench.ChildEnvVar) == "" {
-		os.Exit(runMatrix())
-	}
-
-	target := *url
-	if *dir != "" {
-		served, stop, err := webbench.Serve(*dir)
+// measure runs one measurement in this process.
+func measure(a *cli.App, o options) error {
+	target := o.url
+	if o.dir != "" {
+		served, stop, err := webbench.Serve(o.dir)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "s99webbench:", err)
-			os.Exit(1)
+			return err
 		}
 		defer stop()
 		target = served
 	}
-
 	res, err := webbench.Run(webbench.Options{
 		URL:             target,
-		Workload:        *workload,
-		FrameWindow:     *frames,
-		Width:           *width,
-		Height:          *height,
-		GPUPolicy:       parsePolicy(*gpu),
-		ConsoleToStdout: *console,
+		Workload:        o.workload,
+		FrameWindow:     o.frames,
+		Width:           o.width,
+		Height:          o.height,
+		GPUPolicy:       parsePolicy(o.gpu),
+		ConsoleToStdout: o.console,
 	})
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "s99webbench:", err)
-		os.Exit(1)
+		return err
 	}
-
-	// A child in a matrix run always prints the wire format; its parent parses
-	// the last JSON line and formats for the human.
-	if *asJSON || os.Getenv(webbench.ChildEnvVar) != "" {
-		fmt.Println(res.MarshalLine())
-		return
+	// A matrix child always prints the wire format; its parent parses the last JSON line.
+	if o.json || os.Getenv(webbench.ChildEnvVar) != "" {
+		_, err := fmt.Fprintln(a.Data(), res.MarshalLine())
+		return err
 	}
-	fmt.Println(res.String())
-	if len(res.CPU) > 0 {
-		fmt.Printf("  cpu         ")
-		for name, pct := range res.CPU {
-			fmt.Printf("%s %.1f%%  ", name, pct)
-		}
-		fmt.Println()
-	}
+	a.Console().Print(result(a, res))
+	return nil
 }
 
-// runMatrix re-executes this binary once per configuration with -matrix dropped,
-// so the child measures rather than recursing.
-func runMatrix() int {
-	child := make([]string, 0, len(os.Args))
-	for _, a := range os.Args[1:] {
-		if a == "-matrix" || a == "--matrix" || a == "-matrix=true" || a == "--matrix=true" {
-			continue
-		}
-		child = append(child, a)
-	}
-
+// runMatrix runs one child per default configuration, each a live step, then prints the comparison.
+func runMatrix(a *cli.App, args []string, asJSON bool) error {
 	exe, err := os.Executable()
 	if err != nil {
-		exe = os.Args[0]
+		return err
 	}
-
-	results, err := webbench.Matrix(exe, child, webbench.DefaultMatrix(), os.Stderr)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "s99webbench:", err)
-		return 1
-	}
-
-	for _, a := range os.Args[1:] {
-		if a == "-json" || a == "--json" {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			_ = enc.Encode(results)
-			return 0
+	var results []webbench.Result
+	for _, cfg := range webbench.DefaultMatrix() {
+		step := a.Console().Begin(cfg.Label)
+		res := webbench.Child(exe, args, cfg)
+		if res.Error != "" {
+			step.End(s99term.StatusFailed, s99term.F("error", res.Error))
+		} else {
+			step.End(s99term.StatusOK, s99term.F("fps", fmt.Sprintf("%.1f", res.FPS)))
 		}
+		results = append(results, res)
 	}
-	fmt.Print("\n" + webbench.Compare(results))
-	return 0
+	if asJSON {
+		enc := json.NewEncoder(a.Data())
+		enc.SetIndent("", "  ")
+		return enc.Encode(results)
+	}
+	a.Console().Print(comparison(a, results))
+	return nil
+}
+
+// childArgs are the flags this run was given, minus --matrix, so a child measures instead of recursing.
+func childArgs(cmd *cobra.Command) []string {
+	var args []string
+	cmd.Flags().Visit(func(f *pflag.Flag) {
+		if f.Name != "matrix" {
+			args = append(args, "--"+f.Name+"="+f.Value.String())
+		}
+	})
+	return args
 }
 
 func parsePolicy(s string) webbench.GPUPolicy {
