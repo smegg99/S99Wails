@@ -34,20 +34,16 @@ static gboolean mousenavWatch(void* window, uintptr_t id) {
 import "C"
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
-// ErrNoWebView reports a window with no WebKitWebView inside it to watch.
-var ErrNoWebView = errors.New("mousenav: no webview in the window")
-
 // Each callback belongs to its native window and is removed on GTK destruction, not on a cancellable close.
 var windows sync.Map // uint -> *application.WebviewWindow
 
-// Watch sends the side buttons as EventStep from the first show, since WebKitGTK hands the page both as one.
+// Watch sends the side buttons as eventStep from the first show; WebKitGTK passes both to the page as one, so the page never sees them.
 func Watch(win *application.WebviewWindow, onError func(error)) {
 	windows.Store(win.ID(), win)
 	var once sync.Once
@@ -55,7 +51,7 @@ func Watch(win *application.WebviewWindow, onError func(error)) {
 		once.Do(func() {
 			application.InvokeSync(func() {
 				if C.mousenavWatch(win.NativeWindow(), C.uintptr_t(win.ID())) == 0 {
-					onError(ErrNoWebView)
+					report(onError, ErrNoWebView)
 				}
 			})
 		})
@@ -72,7 +68,7 @@ func mousenavButton(widget *C.GtkWidget, event *C.GdkEventButton, data C.gpointe
 	}
 	if event._type == C.GDK_BUTTON_RELEASE {
 		if win, ok := windows.Load(uint(uintptr(data))); ok {
-			win.(*application.WebviewWindow).DispatchWailsEvent(&application.CustomEvent{Name: EventStep, Data: step})
+			win.(*application.WebviewWindow).DispatchWailsEvent(&application.CustomEvent{Name: eventStep, Data: step})
 		}
 	}
 	return C.TRUE

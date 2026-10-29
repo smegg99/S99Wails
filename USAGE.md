@@ -125,11 +125,13 @@ crash.Done()                               // last step of a clean shutdown
 ```
 
 `Watch` runs a watcher copy of the program and points `debug.SetCrashOutput`
-at a pipe to it. A line goes into the pipe at once when the pipe has room and
+at a pipe to it. A line of up to 512 bytes goes into the pipe at once when the pipe has room and
 nothing is queued, so the lines just before a fatal crash are not lost;
 otherwise one writer goroutine sends the queue, and a full queue drops log lines
-and never blocks the app. `Done` and `PanicHandler` give up on a watcher that
-stopped reading after a second, so the process still exits. The watcher keeps
+and never blocks the app. `Done` and `PanicHandler` drain the queue for up to a
+second, then give the last line another second, so on Linux and macOS the
+process exits even when the watcher stopped reading. Windows pipes take no write
+deadline, so there the last write can still wait for the watcher. The watcher keeps
 the last 1000 log lines from `crash.Sink`, so a report has the debug history up
 to the end.
 
@@ -175,9 +177,12 @@ tooltip. Windows and macOS use the Wails tray. Flat SVG names support hosts with
 theme indexing; `index.theme`, scalable and fixed-size status directories
 support hosts that select artwork by size. The manager extracts embedded
 themes to its own private temporary directory; `Close` returns after the tray is
-gone and that directory removed. `OnError` runs outside the manager's locks, so
-it may rebuild the menu; it must not call `Close`, which waits for the goroutine
-that reports icon errors.
+gone and that directory removed, or after two seconds when a main-thread call is
+stuck because `app.Run` already returned; an icon update requested before `Close`
+is dropped. `OnError` runs outside the manager's locks, so it may rebuild the
+menu; it must not call `Close`, which waits for the goroutine that reports icon
+errors. Without an `OnError`, a panic in the app's icon code is raised again so
+the crash watcher sees it.
 
 | Platform | Default physical sizes | Native asset | Transparent inset |
 |---|---|---|---|

@@ -11,3 +11,13 @@ func TestTheSideButtonsStepBackAndForward(t *testing.T) {
 		}
 	}
 }
+
+// Watch(win, nil) must not crash when the window has no webview.
+func TestReportDropsAnErrorWithNoHandler(t *testing.T) {
+	report(nil, ErrNoWebView)
+	var got error
+	report(func(err error) { got = err }, ErrNoWebView)
+	if got != ErrNoWebView {
+		t.Fatalf("report handed %v, want ErrNoWebView", got)
+	}
+}

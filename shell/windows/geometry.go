@@ -1,4 +1,5 @@
 // shell/windows/geometry.go
+
 package windows
 
 // Rect is a desktop work area or a window rectangle, in logical pixels.

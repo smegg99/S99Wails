@@ -26,6 +26,12 @@ flagConsole:
   value: "kopiuje konsolę strony na stdout"
 errTarget:
   value: "wymagana jest flaga --url albo --dir"
+errGpu:
+  value: "--gpu przyjmuje always, ondemand albo never, a nie {value}"
+  placeholders:
+    value: {type: string}
+errMatrix:
+  value: "żadna ścieżka renderowania nie dała pomiaru"
 
 rowLoadFinished:
   value: "wczytywanie zakończone"

@@ -32,7 +32,7 @@ func clearDisplayEnv(t *testing.T) {
 	}
 }
 
-// plasmaWayland makes PreferX11OnPlasmaWayland eligible to fire.
+// plasmaWayland makes preferX11OnPlasmaWayland eligible to fire.
 func plasmaWayland(t *testing.T) {
 	t.Helper()
 	t.Setenv("XDG_SESSION_TYPE", "wayland")

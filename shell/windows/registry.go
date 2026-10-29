@@ -1,4 +1,5 @@
 // shell/windows/registry.go
+
 // Package windows coordinates native surfaces and acknowledged view transfers.
 // It stores no application data, documents or credentials.
 package windows

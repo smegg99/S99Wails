@@ -1,4 +1,5 @@
 // shell/windowstate/persist_test.go
+
 package windowstate
 
 import (

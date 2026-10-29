@@ -71,7 +71,7 @@ func Run(opts Options) (Result, error) {
 		return Result{}, errors.New("webbench: URL is required")
 	}
 	if active != nil {
-		return Result{}, errors.New("webbench: one run per process; use Matrix for several")
+		return Result{}, errors.New("webbench: one run per process; run each Config through Child")
 	}
 
 	runtime.LockOSThread()

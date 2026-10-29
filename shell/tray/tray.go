@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -61,6 +62,17 @@ func (o Options) report(err error) {
 		o.OnError(err)
 	}
 }
+
+// reportPanic hands a recovered panic to OnError, or raises it again for the crash watcher when there is none.
+func (o Options) reportPanic(r any) {
+	if o.OnError == nil {
+		panic(r)
+	}
+	o.OnError(recoveredError(r))
+}
+
+// closeWait bounds Close: a tray stuck in a main-thread call after app.Run returned must not hold exit.
+var closeWait = 2 * time.Second
 
 // backend is the platform tray the Manager drives.
 type backend interface {
@@ -117,18 +129,24 @@ func start(tray backend, opts Options) *Manager {
 	return m
 }
 
-// Close stops the apply goroutine and waits for it to remove the tray; never call it from OnError.
+// Close stops the apply goroutine and waits, at most closeWait, for it to remove the tray; never call it from OnError.
 func (m *Manager) Close() {
 	m.mu.Lock()
 	if m.closed {
 		m.mu.Unlock()
-		<-m.stopped
+		select {
+		case <-m.stopped:
+		case <-time.After(closeWait):
+		}
 		return
 	}
 	m.closed = true
 	m.mu.Unlock()
 	close(m.pendingApply)
-	<-m.stopped
+	select {
+	case <-m.stopped:
+	case <-time.After(closeWait):
+	}
 }
 
 // SetMenu stores and applies the menu builder; RebuildMenu re-runs it after a locale change.
@@ -218,7 +236,7 @@ func (m *Manager) applyLoop() {
 	defer close(m.stopped)
 	defer func() {
 		if r := recover(); r != nil {
-			m.opts.report(recoveredError(r))
+			m.opts.reportPanic(r)
 		}
 		m.tray.close()
 		if m.themeDir != "" {
@@ -227,6 +245,10 @@ func (m *Manager) applyLoop() {
 	}()
 
 	for range m.pendingApply {
+		// A request buffered before Close would call into a main loop that may have stopped.
+		if m.isClosed() {
+			continue
+		}
 		m.apply()
 	}
 }
@@ -234,7 +256,7 @@ func (m *Manager) applyLoop() {
 func (m *Manager) apply() {
 	defer func() {
 		if r := recover(); r != nil {
-			m.opts.report(recoveredError(r))
+			m.opts.reportPanic(r)
 		}
 	}()
 
@@ -265,4 +287,10 @@ func (m *Manager) apply() {
 	if themed, ok := m.tray.(themedBackend); ok {
 		m.applyThemedIcon(themed, icons, dark)
 	}
+}
+
+func (m *Manager) isClosed() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.closed
 }

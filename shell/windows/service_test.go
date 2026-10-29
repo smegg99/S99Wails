@@ -1,4 +1,5 @@
 // shell/windows/service_test.go
+
 package windows
 
 import (

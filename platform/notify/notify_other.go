@@ -1,6 +1,7 @@
+// platform/notify/notify_other.go
+
 //go:build !linux
 
-// platform/notify/notify_other.go
 package notify
 
 import (

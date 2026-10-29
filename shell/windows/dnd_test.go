@@ -34,7 +34,7 @@ func TestWaylandDropSiteResolvesInItsOwnCoordinates(t *testing.T) {
 // A flood of motions from the GUI thread must never push out the drop and the end that follow it.
 func TestDropAndEndSurviveAFloodOfMotions(t *testing.T) {
 	wake := dndListen()
-	defer dndStop()
+	defer dndStop(wake)
 	for i := range 5000 {
 		dndPost(dndEvent{kind: dndMotion, handle: 1, x: i})
 	}
@@ -88,5 +88,23 @@ func TestDragEndingFollowsTheFailure(t *testing.T) {
 		if event == "tab:drag-end" && payload != "d" {
 			t.Fatalf("%s: payload %v, want the drag id", c.name, payload)
 		}
+	}
+}
+
+// A finished drag's late cleanup must not wipe the sink of the drag that started after it.
+func TestAnOldDragDoesNotStopTheNextOnesSink(t *testing.T) {
+	first := dndListen()
+	second := dndListen()
+	if dndStop(first) {
+		t.Fatal("the first drag stopped a sink it no longer owns")
+	}
+	dndPost(dndEvent{})
+	select {
+	case <-second:
+	default:
+		t.Fatal("the second drag's sink stopped listening")
+	}
+	if !dndStop(second) {
+		t.Fatal("the second drag could not stop its own sink")
 	}
 }

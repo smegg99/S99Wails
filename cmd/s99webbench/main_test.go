@@ -71,3 +71,22 @@ func TestResultRowsAreLocalized(t *testing.T) {
 		}
 	}
 }
+
+// A typo in --gpu is a usage error, not a silent fallback to always.
+func TestAnUnknownGpuPolicyIsAUsageError(t *testing.T) {
+	a, out := newTestApp()
+	if code := a.Run(context.Background(), newRoot(a), []string{"--url", "http://127.0.0.1:1/", "--gpu", "fast"}); code != 2 ||
+		!strings.Contains(out.String(), "always, ondemand or never") {
+		t.Fatalf("code %d, out %q", code, out)
+	}
+}
+
+// A matrix in which every row failed measured nothing, so it is failed work.
+func TestAMatrixWithNoMeasurementFailed(t *testing.T) {
+	if !matrixFailed([]webbench.Result{{Error: "a"}, {Error: "b"}}) {
+		t.Fatal("all rows failed, but the matrix counts as done")
+	}
+	if matrixFailed([]webbench.Result{{Error: "a"}, {}}) {
+		t.Fatal("one row measured, but the matrix counts as failed")
+	}
+}

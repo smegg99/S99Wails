@@ -3,7 +3,11 @@
 // Package mousenav turns a mouse's back and forward buttons into history steps, as a browser does.
 package mousenav
 
-import "github.com/wailsapp/wails/v3/pkg/application"
+import (
+	"errors"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
+)
 
 // eventStep reports a side button: -1 for back, 1 for forward.
 const eventStep = "mouse:step"
@@ -21,4 +25,14 @@ func stepOf(button uint) int {
 		return 1
 	}
 	return 0
+}
+
+// ErrNoWebView is reported when a window has no webview to watch.
+var ErrNoWebView = errors.New("mousenav: no webview in the window")
+
+// report hands err to onError; a nil onError drops it.
+func report(onError func(error), err error) {
+	if onError != nil {
+		onError(err)
+	}
 }

@@ -1,4 +1,5 @@
 // shell/windows/events.go
+
 package windows
 
 // The events the window service sends to its pages; frontendgen's names.ts carries the same values.

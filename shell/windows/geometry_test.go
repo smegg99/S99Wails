@@ -1,4 +1,5 @@
 // shell/windows/geometry_test.go
+
 package windows
 
 import "testing"

@@ -242,6 +242,24 @@ func WebbenchColWorst(l *i18n.Localizer) string {
 	return plain(l, "webbench.colWorst")
 }
 
+// WebbenchErrGpuParams are the placeholders of webbench.errGpu.
+type WebbenchErrGpuParams struct {
+	Value string
+}
+
+// WebbenchErrGpu Usage error for an unknown --gpu value; the three words are the literal values
+func WebbenchErrGpu(l *i18n.Localizer, p WebbenchErrGpuParams) string {
+	data := map[string]any{
+		"Value": p.Value,
+	}
+	return withData(l, "webbench.errGpu", data)
+}
+
+// WebbenchErrMatrix The failure line when no row of a --matrix run produced a measurement
+func WebbenchErrMatrix(l *i18n.Localizer) string {
+	return plain(l, "webbench.errMatrix")
+}
+
 // WebbenchErrTarget Usage error when neither target flag is given
 func WebbenchErrTarget(l *i18n.Localizer) string {
 	return plain(l, "webbench.errTarget")

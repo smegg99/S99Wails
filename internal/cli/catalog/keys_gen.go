@@ -39,6 +39,8 @@ const (
 	KeyWebbenchColSpeed                = "webbench.colSpeed"
 	KeyWebbenchColStyle                = "webbench.colStyle"
 	KeyWebbenchColWorst                = "webbench.colWorst"
+	KeyWebbenchErrGpu                  = "webbench.errGpu"
+	KeyWebbenchErrMatrix               = "webbench.errMatrix"
 	KeyWebbenchErrTarget               = "webbench.errTarget"
 	KeyWebbenchFlagConsole             = "webbench.flagConsole"
 	KeyWebbenchFlagDir                 = "webbench.flagDir"

@@ -126,3 +126,75 @@ func TestMenuAndTooltipAreRebuilt(t *testing.T) {
 		t.Fatalf("tooltip = %q", tray.tooltip)
 	}
 }
+
+// stuckTray blocks setIcon until release closes, as an InvokeSync does once the main loop stopped.
+type stuckTray struct {
+	fakeTray
+	release chan struct{}
+	entered chan struct{}
+}
+
+func (s *stuckTray) setIcon(icon []byte) error {
+	if s.entered != nil {
+		select {
+		case s.entered <- struct{}{}:
+		default:
+		}
+	}
+	<-s.release
+	return s.fakeTray.setIcon(icon)
+}
+
+// An icon requested before Close must not reach a tray whose main loop may be gone.
+func TestCloseSkipsAnIconRequestedBeforeIt(t *testing.T) {
+	tray := &stuckTray{release: make(chan struct{}), entered: make(chan struct{}, 1)}
+	icons := IconsFunc(func(bool) ([]byte, error) { return []byte{1}, nil })
+	m := start(tray, Options{Icons: icons})
+	<-tray.entered
+	m.requestApply()
+	done := make(chan struct{})
+	go func() { m.Close(); close(done) }()
+	eventually(t, "Close did not mark the manager closed", func() bool {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		return m.closed
+	})
+	close(tray.release)
+	<-done
+	tray.mu.Lock()
+	defer tray.mu.Unlock()
+	if tray.icons != 1 {
+		t.Fatalf("icons applied = %d, want only the one in flight", tray.icons)
+	}
+}
+
+// A tray stuck in a main-thread call cannot hold Close forever.
+func TestCloseGivesUpOnAStuckTray(t *testing.T) {
+	defer func(d time.Duration) { closeWait = d }(closeWait)
+	closeWait = 50 * time.Millisecond
+	tray := &stuckTray{release: make(chan struct{})}
+	defer close(tray.release)
+	m := start(tray, Options{Icons: IconsFunc(func(bool) ([]byte, error) { return []byte{1}, nil })})
+	done := make(chan struct{})
+	go func() { m.Close(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("Close waited on a stuck tray")
+	}
+}
+
+// With no OnError a recovered panic is raised again, so the crash watcher sees it.
+func TestARecoveredPanicWithNoHandlerPanicsAgain(t *testing.T) {
+	var got error
+	Options{OnError: func(err error) { got = err }}.reportPanic("boom")
+	if got == nil {
+		t.Fatal("OnError did not get the panic")
+	}
+	defer func() {
+		if recover() == nil {
+			t.Fatal("the panic was swallowed")
+		}
+	}()
+	Options{}.reportPanic("boom")
+}

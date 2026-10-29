@@ -39,6 +39,14 @@ flagConsole:
 errTarget:
   value: "one of --url or --dir is required"
   description: "Usage error when neither target flag is given"
+errGpu:
+  value: "--gpu takes always, ondemand or never, not {value}"
+  description: "Usage error for an unknown --gpu value; the three words are the literal values"
+  placeholders:
+    value: {type: string}
+errMatrix:
+  value: "every render path failed to measure"
+  description: "The failure line when no row of a --matrix run produced a measurement"
 
 rowLoadFinished:
   value: "load finished"

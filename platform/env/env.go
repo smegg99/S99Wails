@@ -36,7 +36,7 @@ const (
 
 // Options configures Setup. Each field is an independent opt-in.
 type Options struct {
-	// PreferX11 calls PreferX11OnPlasmaWayland, for GPUs that flicker under Wayland+DMABUF.
+	// PreferX11 defaults GDK_BACKEND to x11 on Plasma Wayland, for GPUs that flicker under Wayland+DMABUF.
 	PreferX11 bool
 
 	// RenderPath picks how composited frames reach the UI process. The zero
@@ -48,10 +48,10 @@ type Options struct {
 	AppImageRenderPath RenderPath
 
 	// RenderPathVar names the variable holding a rung name (auto, nogbm, shm,
-	// legacy). Empty uses DefaultRenderPathVar.
+	// legacy). Empty uses S99_RENDER.
 	RenderPathVar string
 
-	// DebugVar set to "1" calls DebugRendering. Empty uses DefaultDebugVar.
+	// DebugVar set to "1" turns on WebKitGTK's frame counter and damage overlays. Empty uses S99_RENDER_DEBUG.
 	DebugVar string
 }
 

@@ -50,6 +50,9 @@ func newRoot(a *cli.App) *cobra.Command {
 			if o.url == "" && o.dir == "" {
 				return cli.Usage(errors.New(catalog.WebbenchErrTarget(a.Say())))
 			}
+			if _, ok := parsePolicy(o.gpu); !ok {
+				return cli.Usage(errors.New(catalog.WebbenchErrGpu(a.Say(), catalog.WebbenchErrGpuParams{Value: o.gpu})))
+			}
 			// A matrix run re-executes itself once per configuration.
 			if o.matrix && os.Getenv(webbench.ChildEnvVar) == "" {
 				return runMatrix(a, childArgs(cmd), o.json)
@@ -100,7 +103,7 @@ func measure(a *cli.App, o options) error {
 		FrameWindow:     o.frames,
 		Width:           o.width,
 		Height:          o.height,
-		GPUPolicy:       parsePolicy(o.gpu),
+		GPUPolicy:       policy(o.gpu),
 		ConsoleToStdout: o.console,
 	})
 	if err != nil {
@@ -135,9 +138,15 @@ func runMatrix(a *cli.App, args []string, asJSON bool) error {
 	if asJSON {
 		enc := json.NewEncoder(a.Data())
 		enc.SetIndent("", "  ")
-		return enc.Encode(results)
+		if err := enc.Encode(results); err != nil {
+			return err
+		}
+	} else {
+		a.Console().Print(comparison(a, results))
 	}
-	a.Console().Print(comparison(a, results))
+	if matrixFailed(results) {
+		return errors.New(catalog.WebbenchErrMatrix(a.Say()))
+	}
 	return nil
 }
 
@@ -152,13 +161,30 @@ func childArgs(cmd *cobra.Command) []string {
 	return args
 }
 
-func parsePolicy(s string) webbench.GPUPolicy {
+func parsePolicy(s string) (webbench.GPUPolicy, bool) {
 	switch s {
+	case "always":
+		return webbench.GPUAlways, true
 	case "never":
-		return webbench.GPUNever
+		return webbench.GPUNever, true
 	case "ondemand":
-		return webbench.GPUOnDemand
-	default:
-		return webbench.GPUAlways
+		return webbench.GPUOnDemand, true
 	}
+	return webbench.GPUAlways, false
+}
+
+// policy is parsePolicy for a value RunE already accepted.
+func policy(s string) webbench.GPUPolicy {
+	p, _ := parsePolicy(s)
+	return p
+}
+
+// matrixFailed reports a matrix in which no row produced a measurement.
+func matrixFailed(results []webbench.Result) bool {
+	for _, r := range results {
+		if r.Error == "" {
+			return false
+		}
+	}
+	return len(results) > 0
 }

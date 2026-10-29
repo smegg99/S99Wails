@@ -1,4 +1,5 @@
 // shell/windows/registry_test.go
+
 package windows
 
 import (

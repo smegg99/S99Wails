@@ -1,6 +1,8 @@
 // shell/windows/dnd.go
+
 // Wayland tab drag: the source window follows the tab in its own coordinates; past it a
 // GTK drag with a private target takes over and each window reports hovers in its own.
+
 package windows
 
 import (
@@ -71,10 +73,15 @@ func dndListen() <-chan struct{} {
 	return dndSink.wake
 }
 
-func dndStop() {
+// dndStop stops the sink if wake still owns it, so a drag that ended late leaves the next drag's sink alone.
+func dndStop(wake <-chan struct{}) bool {
 	dndSink.mu.Lock()
 	defer dndSink.mu.Unlock()
+	if dndSink.wake == nil || (<-chan struct{})(dndSink.wake) != wake {
+		return false
+	}
 	dndSink.wake, dndSink.events = nil, nil
+	return true
 }
 
 // dndTake returns the queued callbacks in order and empties the queue.
@@ -143,12 +150,15 @@ func (s *Service) followWayland(d *nativeDrag) {
 	var dropped *Drop
 	failed := dragResultSuccess
 	defer func() {
-		dndStop()
+		// A newer drag already took the sink and the native state; leave both to it.
+		owned := dndStop(wake)
 		application.InvokeSync(func() {
-			if started {
+			if started && owned {
 				dndCancel()
 			}
-			dndClear()
+			if owned {
+				dndClear()
+			}
 		})
 		if lastTarget != "" && lastTarget != d.source {
 			s.registry.Emit(lastTarget, eventTabHover, nil)
