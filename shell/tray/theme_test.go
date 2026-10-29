@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"testing"
 	"testing/fstest"
-	"time"
 )
 
 func TestWriteThemePublishesFilesWithoutRewritingUnchangedArtwork(t *testing.T) {
@@ -118,21 +117,23 @@ func TestThemedIconIsWrittenAndPublishedBesideTheBitmap(t *testing.T) {
 	}
 }
 
-func TestCloseRemovesOwnedThemeDirectory(t *testing.T) {
-	dir, err := os.MkdirTemp(t.TempDir(), "tray-")
-	if err != nil {
-		t.Fatal(err)
-	}
+// Close returns only after the apply goroutine closed the tray and removed the theme it wrote.
+func TestCloseWaitsForTheThemeDirectoryToGo(t *testing.T) {
 	tray := &fakeTray{}
-	m := &Manager{tray: tray, themeDir: dir, pendingApply: make(chan struct{}, 1)}
-	go m.applyLoop()
+	m := start(tray, Options{Icons: goodThemedIcons{}})
+	eventually(t, "themed icon not applied", func() bool {
+		tray.mu.Lock()
+		defer tray.mu.Unlock()
+		return tray.themePath != ""
+	})
+	tray.mu.Lock()
+	dir := tray.themePath
+	tray.mu.Unlock()
 	m.Close()
-	deadline := time.Now().Add(time.Second)
-	for time.Now().Before(deadline) {
-		if _, err := os.Stat(dir); os.IsNotExist(err) && tray.isClosed() {
-			return
-		}
-		time.Sleep(time.Millisecond)
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatalf("theme directory still there after Close: %v", err)
 	}
-	t.Fatal("Close left the owned icon theme or the tray behind")
+	if !tray.isClosed() {
+		t.Fatal("tray still open after Close")
+	}
 }

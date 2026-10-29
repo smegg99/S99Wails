@@ -90,6 +90,8 @@ type Manager struct {
 	themeDir  string
 
 	pendingApply chan struct{}
+	// stopped closes once applyLoop has closed the tray and removed the theme directory.
+	stopped chan struct{}
 }
 
 // NewManager creates the tray and sets its first icon from the detected OS
@@ -109,6 +111,7 @@ func start(tray backend, opts Options) *Manager {
 		icons:        opts.Icons,
 		dark:         dark,
 		pendingApply: make(chan struct{}, 1),
+		stopped:      make(chan struct{}),
 	}
 	go m.applyLoop()
 	m.requestApply()
@@ -116,17 +119,18 @@ func start(tray backend, opts Options) *Manager {
 	return m
 }
 
-// Close stops the apply goroutine and takes the Linux item off the bus. The
-// Manager must not be used afterwards.
+// Close stops the apply goroutine and waits for it to remove the tray; never call it from OnError.
 func (m *Manager) Close() {
 	m.mu.Lock()
 	if m.closed {
 		m.mu.Unlock()
+		<-m.stopped
 		return
 	}
 	m.closed = true
 	m.mu.Unlock()
 	close(m.pendingApply)
+	<-m.stopped
 }
 
 // SetMenu stores the menu builder and applies it. Call RebuildMenu after a
@@ -179,7 +183,6 @@ func (m *Manager) UpdateTheme(dark bool) {
 func (m *Manager) RegisterEvents(app *application.App) {
 	// Re-detect from the OS instead of reading the event payload.
 	detectAndUpdate := func() {
-		defer func() { _ = recover() }()
 		dark := false
 		if d, ok := accent.DetectDarkMode(); ok {
 			dark = d
@@ -215,6 +218,7 @@ func (m *Manager) requestApply() {
 
 // applyLoop owns all icon updates.
 func (m *Manager) applyLoop() {
+	defer close(m.stopped)
 	defer func() {
 		if r := recover(); r != nil {
 			m.opts.report(recoveredError(r))

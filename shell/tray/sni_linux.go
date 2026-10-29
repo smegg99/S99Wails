@@ -268,62 +268,72 @@ func (s *sni) setIcon(icon []byte) error {
 		return err
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.icons = []pixmap{px}
-	s.publish(itemIface, "IconPixmap", s.icons, "NewIcon")
-	return nil
+	err = s.publish(itemIface, "IconPixmap", s.icons, "NewIcon")
+	s.mu.Unlock()
+	return err
 }
 
 func (s *sni) setThemedIcon(themePath, name string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.themePath == themePath && s.iconName == name {
+		s.mu.Unlock()
 		return
 	}
 	s.themePath, s.iconName = themePath, name
-	s.publish(itemIface, "IconThemePath", themePath, "")
-	s.publish(itemIface, "IconName", name, "NewIcon")
+	err := errors.Join(
+		s.publish(itemIface, "IconThemePath", themePath, ""),
+		s.publish(itemIface, "IconName", name, "NewIcon"),
+	)
+	s.mu.Unlock()
+	s.report(err)
 }
 
 func (s *sni) setTooltip(text string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.text == text {
+		s.mu.Unlock()
 		return
 	}
 	s.text = text
-	s.publish(itemIface, "ToolTip", s.tooltip(), "NewToolTip")
+	err := s.publish(itemIface, "ToolTip", s.tooltip(), "NewToolTip")
+	s.mu.Unlock()
+	s.report(err)
 }
 
 func (s *sni) setMenu(items []Item) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	same := sameLayout(s.items, items)
 	s.items = items
 	if same {
+		s.mu.Unlock()
 		return
 	}
 	s.revision++
+	var err error
 	if s.conn != nil {
-		s.report(s.conn.Emit(menuPath, menuIface+".LayoutUpdated", s.revision, int32(0)))
+		err = s.conn.Emit(menuPath, menuIface+".LayoutUpdated", s.revision, int32(0))
 	}
+	s.mu.Unlock()
+	s.report(err)
 }
 
-// publish sets an exported property and sends the item signal hosts listen
-// for. Before the export there is nothing to send; the caller holds mu.
-func (s *sni) publish(iface, name string, value any, signal string) {
+// publish sets an exported property and sends the item signal hosts listen for; the caller holds mu
+// and reports the error after unlocking it, so an OnError may call back into the item.
+func (s *sni) publish(iface, name string, value any, signal string) (err error) {
 	if s.props == nil {
-		return
+		return nil
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			s.report(fmt.Errorf("tray: publish %s: %w", name, recoveredError(r)))
+			err = fmt.Errorf("tray: publish %s: %w", name, recoveredError(r))
 		}
 	}()
 	s.props.SetMust(iface, name, value)
 	if signal != "" {
-		s.report(s.conn.Emit(itemPath, itemIface+"."+signal))
+		return s.conn.Emit(itemPath, itemIface+"."+signal)
 	}
+	return nil
 }
 
 func (s *sni) close() {

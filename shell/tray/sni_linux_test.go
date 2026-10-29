@@ -238,3 +238,41 @@ func TestMenuActionPanicCrashesTheProcess(t *testing.T) {
 		t.Fatalf("err = %v, output %q; want the process to die of the panic", err, out)
 	}
 }
+
+// An OnError that rebuilds the menu runs while a publish fails; it must not wait on the item's lock.
+func TestErrorHandlerMayCallBackIntoTheItem(t *testing.T) {
+	t.Setenv("DBUS_SESSION_BUS_ADDRESS", privateBus(t))
+	menu := []Item{{Label: "Open"}}
+	var item *sni
+	reported := make(chan error, 8)
+	item = newSNI("app", Options{OnError: func(err error) {
+		item.setMenu(menu)
+		item.setTooltip("")
+		reported <- err
+	}})
+	if err := item.start(); err != nil {
+		t.Fatal(err)
+	}
+	item.mu.Lock()
+	conn := item.conn
+	item.mu.Unlock()
+	if err := conn.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		item.setMenu([]Item{{Label: "Open"}, {Label: "Quit"}})
+		item.setTooltip("Connected")
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("a failing publish deadlocked on the error handler")
+	}
+	item.close()
+	if len(reported) == 0 {
+		t.Fatal("the failed publish was not reported")
+	}
+}
