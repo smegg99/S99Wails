@@ -1,3 +1,4 @@
+// frontendgen/integrations/s99ab/tabsBridge.ts
 // Opaque view transfers between S99AB tab collections and native Wails windows.
 import { Events } from '@wailsio/runtime'
 import { computed, nextTick, onScopeDispose, ref, shallowRef, watch } from 'vue'
@@ -119,9 +120,11 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
       await options.flush()
       if (payload.owner !== owner()) return
       await bindings.Claim(payload.owner, offer.id)
-    } catch (err) {
+    }
+    catch (err) {
       failure.value = options.errorKey(err)
-    } finally {
+    }
+    finally {
       handling.delete(offer.id)
     }
   }
@@ -136,10 +139,12 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
     try {
       await options.flush()
       await bindings.Released(offer.id)
-    } catch (err) {
+    }
+    catch (err) {
       failure.value = options.errorKey(err)
       return
-    } finally {
+    }
+    finally {
       handling.delete(offer.id)
     }
     // Only once released: the window cannot close while the offer is open.
@@ -213,7 +218,8 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
       if (drop.target === name.value) {
         ws.move(tab.id, drop.slot)
         ws.activate(tab.id)
-      } else void move(tab, drop.target, drop.slot, drop.target ? undefined : { x: drop.x, y: drop.y, positioned: true })
+      }
+      else void move(tab, drop.target, drop.slot, drop.target ? undefined : { x: drop.x, y: drop.y, positioned: true })
     })
     listen('window:blocked', (event) => {
       failure.value = event.data as string
@@ -230,7 +236,8 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
         await options.settle()
         await options.flush()
         await bindings.CloseReady(event.data as string, true)
-      } catch (err) {
+      }
+      catch (err) {
         closing.value = false
         failure.value = options.errorKey(err)
         await bindings.CloseReady(event.data as string, false).catch(error => options.report('window close', error))
@@ -261,7 +268,8 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
         ? await bindings.TearOff(owner(), tab.id, JSON.stringify(payload), position.x, position.y, position.positioned)
         : await bindings.Move(owner(), target, tab.id, slot, JSON.stringify(payload))
       if (!finished.has(offer.id)) remember(offer)
-    } catch (err) {
+    }
+    catch (err) {
       tab.moving = false
       failure.value = options.errorKey(err)
     }
@@ -271,13 +279,15 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
     failure.value = ''
     try {
       await ready()
-    } catch (err) { failure.value = options.errorKey(err) }
+    }
+    catch (err) { failure.value = options.errorKey(err) }
   }
 
   async function cancel(id: string) {
     try {
       await bindings.Cancel(id)
-    } catch (err) {
+    }
+    catch (err) {
       failure.value = options.errorKey(err)
       await retry()
     }
@@ -296,7 +306,8 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
         return supported
       }
       return supported
-    } catch (err) {
+    }
+    catch (err) {
       dragging.value = ''
       failure.value = options.errorKey(err)
       return true
@@ -330,7 +341,8 @@ function readFace(raw?: string): NativeTabFace | undefined {
   try {
     const face = JSON.parse(raw) as Partial<NativeTabFace> | null
     return typeof face?.title === 'string' && typeof face.icon === 'string' ? face as NativeTabFace : undefined
-  } catch {
+  }
+  catch {
     return undefined
   }
 }

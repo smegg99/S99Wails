@@ -24,13 +24,8 @@ export default ts.config(
     files: ['**/*.ts'],
     rules: { 'no-undef': 'off' },
   },
-  stylistic.configs.customize({
-    // Matches the s99ab layer style.
-    quotes: 'single',
-    semi: false,
-    braceStyle: '1tbs',
-    commaDangle: 'always-multiline',
-  }),
+  // The preset's defaults are the s99ab layer's style: single quotes, no semicolons, stroustrup braces.
+  stylistic.configs.customize(),
   {
     // Repo tooling, not shipped code.
     files: ['scripts/**/*.mjs', 'eslint.config.mjs'],

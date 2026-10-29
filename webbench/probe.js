@@ -16,11 +16,13 @@
     out.nodes = document.getElementsByTagName('*').length
     var sheets = document.styleSheets, rules = 0, counted = 0
     for (var i = 0; i < sheets.length; i++) {
-      try { rules += sheets[i].cssRules.length; counted++ } catch (e) { /* cross-origin sheet */ }
+      try { rules += sheets[i].cssRules.length; counted++ }
+      catch (e) { /* cross-origin sheet */ }
     }
     out.css_rules = rules
     out.stylesheets = counted
-  } catch (e) { out.probe_error = 'inventory: ' + e }
+  }
+  catch (e) { out.probe_error = 'inventory: ' + e }
 
   /* ---- navigation and paint ------------------------------------------ */
   try {
@@ -33,7 +35,8 @@
       if (e.name === 'first-paint') out.first_paint_ms = ms(e.startTime)
       if (e.name === 'first-contentful-paint') out.first_contentful_paint_ms = ms(e.startTime)
     })
-  } catch (e) { /* not every engine implements these */ }
+  }
+  catch (e) { /* not every engine implements these */ }
 
   /* ---- synthetic content --------------------------------------------- */
   if (WORKLOAD === 'synthetic') {
@@ -67,7 +70,8 @@
     root.removeAttribute('data-s99bench')
     samples.sort(function (a, b) { return a - b })
     out.style_recalc_ms = ms(samples[Math.floor(samples.length / 2)])
-  } catch (e) { out.probe_error = 'style: ' + e }
+  }
+  catch (e) { out.probe_error = 'style: ' + e }
 
   /* ---- forced synchronous layout -------------------------------------- */
   try {
@@ -80,7 +84,8 @@
     if (scroller) scroller.scrollTop = 0
     out.layout_thrash_ms = ms(performance.now() - t2)
     out._sink = sink & 1
-  } catch (e) { out.probe_error = 'layout: ' + e }
+  }
+  catch (e) { out.probe_error = 'layout: ' + e }
 
   /* ---- engine: plain access, then the same through a Proxy ------------ */
   try {
@@ -97,7 +102,8 @@
     for (var m = 0; m < N; m++) { var pb = proxied[m & 7]; acc2 += pb.a + pb.b + pb.c.length + pb.d[0] }
     out.reactivity_ms = ms(performance.now() - t4)
     out._sink2 = (acc + acc2) & 1
-  } catch (e) { out.probe_error = 'script: ' + e }
+  }
+  catch (e) { out.probe_error = 'script: ' + e }
 
   /* ---- frames --------------------------------------------------------- */
   var overlay = document.createElement('div')
