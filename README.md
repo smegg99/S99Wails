@@ -105,7 +105,7 @@ go get -tool github.com/smegg99/s99wails/v2/frontendgen
 In v2 the OS-facing packages live under `platform/`, the window and tray ones
 under `shell/`, and the import path carries the `/v2` suffix. `traygen` is a
 separate module; the code it emits imports `shell/tray`, so it also carries the
-suffix and is tagged `traygen/v2.1.0`.
+suffix and is tagged `traygen/v2.1.1`.
 
 The module pins upstream `wails/v3 v3.0.0`. On Linux, build with
 `-tags gtk3` (WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many
