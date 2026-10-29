@@ -46,7 +46,7 @@ typecheck:
     set -euo pipefail
     out="{{justfile_directory()}}/.frontendgen-check"
     rm -rf "$out"
-    (cd "{{justfile_directory()}}/examples" && go tool frontendgen -out "$out" -s99ab >/dev/null)
+    (cd "{{justfile_directory()}}/examples" && go tool frontendgen --out "$out" --s99ab >/dev/null)
     pnpm typecheck
 
 # Set the version and sync generated metadata.
@@ -56,6 +56,10 @@ set-version ver:
 # Fail when package.json has drifted from VERSION.
 check-version:
     node scripts/sync-version.mjs --check
+
+# Rebuild the commands' message catalogues from i18n/ and traygen/i18n/.
+locales:
+    go run github.com/smegg99/s99locale/cmd/loc@v1.0.0 build -c i18n/config.cue
 
 # Regenerate frontendgen/assets/names.ts from the Go constants it shares.
 names:
@@ -76,7 +80,7 @@ check-frontendgen:
     set -euo pipefail
     tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' EXIT
-    (cd "{{justfile_directory()}}/examples" && go tool frontendgen -out "$tmp" >/dev/null)
+    (cd "{{justfile_directory()}}/examples" && go tool frontendgen --out "$tmp" >/dev/null)
     diff -ru "{{justfile_directory()}}/examples/frontendgen/gen" "$tmp"
 
 # Fail when the committed example icons have drifted from the SVGs and the CUE.

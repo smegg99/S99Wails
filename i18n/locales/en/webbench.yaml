@@ -1,0 +1,126 @@
+# i18n/locales/en/webbench.yaml
+
+short:
+  value: "Measure a page inside WebKitGTK and compare render paths"
+  description: "s99webbench's one-line description, in --help"
+long:
+  value: "s99webbench loads a page in a WebKitGTK window and reports load, frame and style timing. --matrix runs one child process per render path and compares them. It needs cgo, gtk3, webkit2gtk-4.1 and a display."
+  description: "s99webbench's long description, in --help"
+flagUrl:
+  value: "URL to measure"
+  description: "Usage text for --url"
+flagDir:
+  value: "directory of a built SPA to serve over loopback and measure"
+  description: "Usage text for --dir"
+flagWorkload:
+  value: "page (drive the page's own content) or synthetic (build a list first)"
+  description: "Usage text for --workload; page and synthetic are the literal values"
+flagFrames:
+  value: "how long to count frames"
+  description: "Usage text for --frames"
+flagWidth:
+  value: "window width"
+  description: "Usage text for --width"
+flagHeight:
+  value: "window height"
+  description: "Usage text for --height"
+flagGpu:
+  value: "hardware acceleration policy: always, ondemand, never"
+  description: "Usage text for --gpu; the three words are the literal values"
+flagMatrix:
+  value: "run the default render-path comparison, one child process per configuration"
+  description: "Usage text for --matrix"
+flagJson:
+  value: "print results as JSON"
+  description: "Usage text for --json"
+flagConsole:
+  value: "mirror the page's console to stdout"
+  description: "Usage text for --console"
+errTarget:
+  value: "one of --url or --dir is required"
+  description: "Usage error when neither target flag is given"
+
+rowLoadFinished:
+  value: "load finished"
+  description: "Result row: wall time until WebKit finished loading"
+rowDomContent:
+  value: "DOMContentLoaded"
+  description: "Result row: the DOMContentLoaded event time"
+rowLoadEvent:
+  value: "load event"
+  description: "Result row: the load event time"
+rowFirstPaint:
+  value: "first paint"
+  description: "Result row: the first paint time"
+rowFirstContentfulPaint:
+  value: "first contentful paint"
+  description: "Result row: the first contentful paint time"
+rowFps:
+  value: "frame rate"
+  description: "Result row: frames per second under the workload"
+rowFrameP50:
+  value: "median frame"
+  description: "Result row: the 50th percentile frame time"
+rowFrameP95:
+  value: "95th percentile frame"
+  description: "Result row: the 95th percentile frame time"
+rowFrameWorst:
+  value: "worst frame"
+  description: "Result row: the longest frame"
+rowFramesCounted:
+  value: "frames counted"
+  description: "Result row: how many frames the window counted"
+rowStyleRecalc:
+  value: "style recalculation"
+  description: "Result row: cost of one full style invalidation"
+rowLayoutThrash:
+  value: "forced layout"
+  description: "Result row: cost of forced synchronous layouts"
+rowScript:
+  value: "script"
+  description: "Result row: plain script cost"
+rowReactivity:
+  value: "reactivity"
+  description: "Result row: the same script through a Proxy"
+rowNodes:
+  value: "DOM nodes"
+  description: "Result row: element count"
+rowCssRules:
+  value: "CSS rules"
+  description: "Result row: CSS rule count"
+rowStylesheets:
+  value: "stylesheets"
+  description: "Result row: readable stylesheet count"
+rowCpu:
+  value: "CPU {process}"
+  description: "Result row: CPU use of one WebKit process"
+  placeholders:
+    process: {type: string}
+
+colConfiguration:
+  value: "configuration"
+  description: "Comparison column: the render path"
+colFps:
+  value: "fps"
+  description: "Comparison column: frames per second"
+colP95:
+  value: "p95 ms"
+  description: "Comparison column: 95th percentile frame time"
+colWorst:
+  value: "worst ms"
+  description: "Comparison column: longest frame"
+colLoad:
+  value: "load ms"
+  description: "Comparison column: load finished time"
+colStyle:
+  value: "style ms"
+  description: "Comparison column: style recalculation"
+colGpu:
+  value: "gpu %"
+  description: "Comparison column: CPU use of the GPU process"
+colSpeed:
+  value: "vs slowest"
+  description: "Comparison column: frame rate as a multiple of the slowest row's"
+colError:
+  value: "error"
+  description: "Comparison column: why a row has no numbers"

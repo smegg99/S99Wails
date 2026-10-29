@@ -11,7 +11,7 @@ import (
 
 func TestRunEmitsComposables(t *testing.T) {
 	out := t.TempDir()
-	if err := run(filepath.Join(out, "s99wails"), false); err != nil {
+	if _, err := run(filepath.Join(out, "s99wails"), false); err != nil {
 		t.Fatalf("run: %v", err)
 	}
 
@@ -45,7 +45,7 @@ func TestS99abBridgeIsOptIn(t *testing.T) {
 	bridge := "appearanceBridge.ts"
 
 	base := t.TempDir()
-	if err := run(base, false); err != nil {
+	if _, err := run(base, false); err != nil {
 		t.Fatalf("run(base): %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(base, bridge)); !os.IsNotExist(err) {
@@ -53,7 +53,7 @@ func TestS99abBridgeIsOptIn(t *testing.T) {
 	}
 
 	opted := t.TempDir()
-	if err := run(opted, true); err != nil {
+	if _, err := run(opted, true); err != nil {
 		t.Fatalf("run(s99ab): %v", err)
 	}
 	data, err := os.ReadFile(filepath.Join(opted, bridge))

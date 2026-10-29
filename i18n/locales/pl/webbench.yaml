@@ -1,0 +1,86 @@
+# i18n/locales/pl/webbench.yaml
+
+short:
+  value: "Mierzy stronę w WebKitGTK i porównuje ścieżki renderowania"
+long:
+  value: "s99webbench wczytuje stronę w oknie WebKitGTK i podaje czasy wczytywania, klatek i stylów. --matrix uruchamia osobny proces dla każdej ścieżki renderowania i porównuje wyniki. Wymaga cgo, gtk3, webkit2gtk-4.1 i ekranu."
+flagUrl:
+  value: "adres URL do zmierzenia"
+flagDir:
+  value: "katalog zbudowanej aplikacji SPA, serwowany lokalnie i mierzony"
+flagWorkload:
+  value: "page (treść samej strony) lub synthetic (najpierw buduje listę)"
+flagFrames:
+  value: "jak długo liczyć klatki"
+flagWidth:
+  value: "szerokość okna"
+flagHeight:
+  value: "wysokość okna"
+flagGpu:
+  value: "akceleracja sprzętowa: always, ondemand, never"
+flagMatrix:
+  value: "uruchamia domyślne porównanie ścieżek renderowania, osobny proces na konfigurację"
+flagJson:
+  value: "wypisuje wyniki jako JSON"
+flagConsole:
+  value: "kopiuje konsolę strony na stdout"
+errTarget:
+  value: "wymagana jest flaga --url albo --dir"
+
+rowLoadFinished:
+  value: "wczytywanie zakończone"
+rowDomContent:
+  value: "DOMContentLoaded"
+rowLoadEvent:
+  value: "zdarzenie load"
+rowFirstPaint:
+  value: "pierwsze malowanie"
+rowFirstContentfulPaint:
+  value: "pierwsze malowanie treści"
+rowFps:
+  value: "klatki na sekundę"
+rowFrameP50:
+  value: "mediana klatki"
+rowFrameP95:
+  value: "95. percentyl klatki"
+rowFrameWorst:
+  value: "najdłuższa klatka"
+rowFramesCounted:
+  value: "policzone klatki"
+rowStyleRecalc:
+  value: "przeliczenie stylów"
+rowLayoutThrash:
+  value: "wymuszony układ"
+rowScript:
+  value: "skrypt"
+rowReactivity:
+  value: "reaktywność"
+rowNodes:
+  value: "węzły DOM"
+rowCssRules:
+  value: "reguły CSS"
+rowStylesheets:
+  value: "arkusze stylów"
+rowCpu:
+  value: "CPU {process}"
+  placeholders:
+    process: {type: string}
+
+colConfiguration:
+  value: "konfiguracja"
+colFps:
+  value: "kl/s"
+colP95:
+  value: "p95 ms"
+colWorst:
+  value: "najgorsza ms"
+colLoad:
+  value: "wczytanie ms"
+colStyle:
+  value: "style ms"
+colGpu:
+  value: "gpu %"
+colSpeed:
+  value: "względem najwolniejszej"
+colError:
+  value: "błąd"

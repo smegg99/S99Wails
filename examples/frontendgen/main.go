@@ -5,7 +5,7 @@
 //	go generate ./frontendgen
 //	go run ./frontendgen
 //
-//go:generate go tool frontendgen -out gen
+//go:generate go tool frontendgen --out gen
 package main
 
 import (

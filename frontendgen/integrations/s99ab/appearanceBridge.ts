@@ -1,6 +1,6 @@
 // frontendgen/integrations/s99ab/appearanceBridge.ts
 
-// Feeds the desktop dark mode and accent into the s99ab theme. Emitted only with `frontendgen -s99ab`.
+// Feeds the desktop dark mode and accent into the s99ab theme. Emitted only with `frontendgen --s99ab`.
 
 import { registerAppearanceSource } from '@smegg99/s99ab/appearance'
 import { useSystemTheme, type SystemThemeOptions } from './systemTheme'

@@ -1,0 +1,17 @@
+# i18n/locales/en/frontendgen.yaml
+
+short:
+  value: "Write the s99wails composables into an app's frontend tree"
+  description: "frontendgen's one-line description, in --help"
+long:
+  value: "frontendgen writes the s99wails TypeScript composables into a directory of the app's frontend, each file marked as generated. Run it from go:generate."
+  description: "frontendgen's long description, in --help"
+flagOut:
+  value: "output directory for the emitted composables"
+  description: "Usage text for frontendgen's --out flag"
+flagS99ab:
+  value: "also emit the s99ab bridges (for apps that extend @smegg99/s99ab)"
+  description: "Usage text for frontendgen's --s99ab flag"
+emitted:
+  value: "Emitted the composables"
+  description: "Line after a run; the files and out fields follow it"

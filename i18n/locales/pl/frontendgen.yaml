@@ -1,0 +1,12 @@
+# i18n/locales/pl/frontendgen.yaml
+
+short:
+  value: "Zapisuje composables s99wails w drzewie frontendu aplikacji"
+long:
+  value: "frontendgen zapisuje composables TypeScript s99wails w katalogu frontendu aplikacji i oznacza każdy plik jako wygenerowany. Uruchamiaj go z go:generate."
+flagOut:
+  value: "katalog wyjściowy dla composables"
+flagS99ab:
+  value: "zapisuje też mosty s99ab (dla aplikacji rozszerzających @smegg99/s99ab)"
+emitted:
+  value: "Zapisano composables"
