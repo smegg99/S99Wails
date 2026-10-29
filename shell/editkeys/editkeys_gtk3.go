@@ -57,8 +57,7 @@ var windows sync.Map // uint -> *application.WebviewWindow
 // The targets hook is the whole process's, added with the first window shown.
 var hookTargets sync.Once
 
-// Watch sends the window's ctrl+Z and ctrl+shift+Z as Event once it is shown, and adds,
-// once per process, the hook that turns any failed TARGETS reply into an empty list.
+// Watch sends ctrl+Z and ctrl+shift+Z as Event and hooks failed TARGETS replies; a nil onError drops failures.
 func Watch(win *application.WebviewWindow, onError func(error)) {
 	windows.Store(win.ID(), win)
 	var once sync.Once
@@ -67,7 +66,7 @@ func Watch(win *application.WebviewWindow, onError func(error)) {
 			application.InvokeSync(func() {
 				hookTargets.Do(func() { C.editkeysHookTargets() })
 				if C.editkeysWatch(win.NativeWindow(), C.uintptr_t(win.ID())) == 0 {
-					onError(ErrNoWindow)
+					report(onError, ErrNoWindow)
 				}
 			})
 		})

@@ -27,3 +27,10 @@ func actionOf(key uint, control, shift, other bool) string {
 	}
 	return "undo"
 }
+
+// report hands err to onError; a nil onError drops it.
+func report(onError func(error), err error) {
+	if onError != nil {
+		onError(err)
+	}
+}
