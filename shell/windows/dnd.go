@@ -20,36 +20,85 @@ const (
 	dndEnd
 )
 
+// GtkDragResult values a drag-failed signal carries.
+const (
+	dragResultSuccess = iota
+	dragResultNoTarget
+	dragResultUserCancelled
+	dragResultTimeoutExpired
+	dragResultGrabBroken
+	dragResultError
+)
+
 type dndEvent struct {
 	kind         dndKind
 	handle       uintptr
 	x, y, result int
 }
 
-// dndSink receives the GTK callbacks of the one drag in progress. Posting from the GUI
-// thread never blocks; a dropped motion is superseded by the next one.
+// dndSink queues the GTK callbacks of the one drag in progress. Posting from the GUI thread never
+// blocks and nothing is dropped: a motion only replaces the motion queued right before it.
 var dndSink struct {
 	mu     sync.Mutex
-	events chan dndEvent
+	wake   chan struct{}
+	events []dndEvent
 }
 
 func dndPost(e dndEvent) {
 	dndSink.mu.Lock()
-	events := dndSink.events
-	dndSink.mu.Unlock()
-	if events == nil {
+	wake := dndSink.wake
+	if wake == nil {
+		dndSink.mu.Unlock()
 		return
 	}
+	n := len(dndSink.events)
+	if e.kind == dndMotion && n > 0 && dndSink.events[n-1].kind == dndMotion && dndSink.events[n-1].handle == e.handle {
+		dndSink.events[n-1] = e
+	} else {
+		dndSink.events = append(dndSink.events, e)
+	}
+	dndSink.mu.Unlock()
 	select {
-	case events <- e:
+	case wake <- struct{}{}:
 	default:
 	}
 }
 
-func dndListen(events chan dndEvent) {
+// dndListen starts queueing callbacks; the returned channel signals that dndTake has events.
+func dndListen() <-chan struct{} {
 	dndSink.mu.Lock()
-	dndSink.events = events
-	dndSink.mu.Unlock()
+	defer dndSink.mu.Unlock()
+	dndSink.wake, dndSink.events = make(chan struct{}, 1), nil
+	return dndSink.wake
+}
+
+func dndStop() {
+	dndSink.mu.Lock()
+	defer dndSink.mu.Unlock()
+	dndSink.wake, dndSink.events = nil, nil
+}
+
+// dndTake returns the queued callbacks in order and empties the queue.
+func dndTake() []dndEvent {
+	dndSink.mu.Lock()
+	defer dndSink.mu.Unlock()
+	events := dndSink.events
+	dndSink.events = nil
+	return events
+}
+
+// dragEnding is the event the source window gets when GTK ends the drag. Wayland reports a drop
+// outside the app and Escape as one cancellation; both tear the tab off, as on X11. A drag GTK
+// broke (grab lost, timeout, error) ends with the tab left in place.
+func dragEnding(d *nativeDrag, dropped *Drop, failed int) (string, any) {
+	switch failed {
+	case dragResultTimeoutExpired, dragResultGrabBroken, dragResultError:
+		return "tab:drag-end", d.id
+	}
+	if dropped != nil {
+		return "tab:drop", *dropped
+	}
+	return "tab:drop", Drop{ID: d.id, Tab: d.tab, Slot: -1}
 }
 
 // handle names a window for the C callbacks, which cannot carry a Go string.
@@ -83,8 +132,7 @@ func (s *Service) target(d *nativeDrag, handle uintptr, x, y int) Drop {
 }
 
 func (s *Service) followWayland(d *nativeDrag) {
-	events := make(chan dndEvent, 1024)
-	dndListen(events)
+	wake := dndListen()
 	ticker := time.NewTicker(16 * time.Millisecond)
 	defer ticker.Stop()
 	deadline := time.NewTimer(time.Minute)
@@ -96,8 +144,9 @@ func (s *Service) followWayland(d *nativeDrag) {
 	// GTK drag holds the pointer, so the page is told where it is.
 	overSource := true
 	var dropped *Drop
+	failed := dragResultSuccess
 	defer func() {
-		dndListen(nil)
+		dndStop()
 		application.InvokeSync(func() {
 			if started {
 				dndCancel()
@@ -138,41 +187,40 @@ func (s *Service) followWayland(d *nativeDrag) {
 		case <-deadline.C:
 			s.registry.Emit(d.source, "tab:drag-end", d.id)
 			return
-		case e := <-events:
-			if !started {
-				continue
-			}
-			s.mu.Lock()
-			name := s.handleNames[e.handle]
-			s.mu.Unlock()
-			switch e.kind {
-			case dndMotion:
-				if name == d.source {
-					track(true, e.x, e.y)
-				} else if overSource {
-					track(false, 0, 0)
+		case <-wake:
+			for _, e := range dndTake() {
+				if !started {
+					continue
 				}
-				hover(s.target(d, e.handle, e.x, e.y))
-			case dndLeave:
-				if name == d.source && overSource {
-					track(false, 0, 0)
+				s.mu.Lock()
+				name := s.handleNames[e.handle]
+				s.mu.Unlock()
+				switch e.kind {
+				case dndMotion:
+					if name == d.source {
+						track(true, e.x, e.y)
+					} else if overSource {
+						track(false, 0, 0)
+					}
+					hover(s.target(d, e.handle, e.x, e.y))
+				case dndLeave:
+					if name == d.source && overSource {
+						track(false, 0, 0)
+					}
+					if name == lastTarget {
+						hover(Drop{})
+					}
+				case dndDrop:
+					drop := s.target(d, e.handle, e.x, e.y)
+					dropped = &drop
+				case dndFailed:
+					failed = e.result
+				case dndEnd:
+					started = false
+					event, payload := dragEnding(d, dropped, failed)
+					s.registry.Emit(d.source, event, payload)
+					return
 				}
-				if name == lastTarget {
-					hover(Drop{})
-				}
-			case dndDrop:
-				drop := s.target(d, e.handle, e.x, e.y)
-				dropped = &drop
-			case dndEnd:
-				// Wayland reports a drop outside the app and Escape as one
-				// cancellation; both tear the tab off, as on X11.
-				started = false
-				drop := Drop{ID: d.id, Tab: d.tab, Slot: -1}
-				if dropped != nil {
-					drop = *dropped
-				}
-				s.registry.Emit(d.source, "tab:drop", drop)
-				return
 			}
 		case <-ticker.C:
 			image, version := s.pendingImage(d, seen)
