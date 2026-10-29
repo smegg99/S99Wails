@@ -29,7 +29,7 @@ func (s *Service) close(name, owner string) error {
 func (s *Service) requestClose(name string) {
 	s.cancelDrag(name, "")
 	if !s.registry.CanClose(name) {
-		s.registry.Emit(name, "window:blocked", s.options.BlockedKey)
+		s.registry.Emit(name, eventWindowBlocked, s.options.BlockedKey)
 		return
 	}
 	token := Name()
@@ -41,7 +41,7 @@ func (s *Service) requestClose(name string) {
 		s.closeEpoch[name] = 0
 	}
 	s.mu.Unlock()
-	s.registry.Emit(name, "window:close", token)
+	s.registry.Emit(name, eventWindowClose, token)
 }
 
 // RequestQuit asks every frontend to flush layout and accepted edits.
@@ -63,7 +63,7 @@ func RequestQuit(s *Service) bool {
 	list := s.registry.List()
 	for _, window := range list {
 		if !s.registry.CanClose(window.Name) {
-			s.registry.Emit(window.Name, "window:blocked", s.options.BlockedKey)
+			s.registry.Emit(window.Name, eventWindowBlocked, s.options.BlockedKey)
 			return false
 		}
 	}
@@ -189,6 +189,6 @@ func (s *Service) resume() {
 	}
 	s.mu.Unlock()
 	for _, window := range s.registry.List() {
-		s.registry.Emit(window.Name, "window:resume", "")
+		s.registry.Emit(window.Name, eventWindowResume, "")
 	}
 }

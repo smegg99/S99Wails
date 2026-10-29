@@ -270,7 +270,7 @@ func (s *Service) owns(owner string) error {
 }
 func (s *Service) broadcast() {
 	for _, window := range s.registry.List() {
-		s.registry.Emit(window.Name, "windows:changed", s.registry.List())
+		s.registry.Emit(window.Name, eventWindowsChanged, s.registry.List())
 	}
 }
 

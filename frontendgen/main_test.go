@@ -19,7 +19,8 @@ func TestRunEmitsComposables(t *testing.T) {
 		"index.ts":       "useDesktopLocaleSync",
 		"environment.ts": "'_wails' in window",
 		"localeSync.ts":  "getLanguage",
-		"systemTheme.ts": "theme:changed",
+		"systemTheme.ts": "THEME_CHANGED_EVENT",
+		"names.ts":       "theme:changed",
 		"logBridge.ts":   "unhandledrejection",
 		"appTitle.ts":    "useAppTitle",
 	} {

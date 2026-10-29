@@ -57,6 +57,10 @@ set-version ver:
 check-version:
     node scripts/sync-version.mjs --check
 
+# Regenerate frontendgen/assets/names.ts from the Go constants it shares.
+names:
+    go test ./frontendgen -run TestNamesFollowTheGoConstants -update
+
 # Regenerate the worked example's emitted composables.
 frontendgen:
     cd examples && go generate ./frontendgen

@@ -150,7 +150,7 @@ func (r *Registry) Move(source, target, tab string, slot int, payload json.RawMe
 	ready, surface := to.info.Ready, to.surface
 	r.mu.Unlock()
 	if ready {
-		surface.Emit("tab:arrive", clone(offer))
+		surface.Emit(eventTabArrive, clone(offer))
 	}
 	return clone(offer), nil
 }
@@ -173,7 +173,7 @@ func (r *Registry) Claim(target, id string) error {
 	r.offers[id] = offer
 	surface := source.surface
 	r.mu.Unlock()
-	surface.Emit("tab:release", clone(offer))
+	surface.Emit(eventTabRelease, clone(offer))
 	return nil
 }
 
@@ -193,10 +193,10 @@ func (r *Registry) Released(source, id string) error {
 	from, to := r.entries[offer.Source], r.entries[offer.Target]
 	r.mu.Unlock()
 	if from != nil {
-		from.surface.Emit("tab:done", id)
+		from.surface.Emit(eventTabDone, id)
 	}
 	if to != nil {
-		to.surface.Emit("tab:done", id)
+		to.surface.Emit(eventTabDone, id)
 	}
 	return nil
 }
@@ -214,10 +214,10 @@ func (r *Registry) Cancel(source, id string) error {
 	from := r.entries[offer.Source]
 	r.mu.Unlock()
 	if target != nil {
-		target.surface.Emit("tab:cancel", id)
+		target.surface.Emit(eventTabCancel, id)
 	}
 	if from != nil {
-		from.surface.Emit("tab:cancelled", clone(offer))
+		from.surface.Emit(eventTabCancelled, clone(offer))
 	}
 	return nil
 }

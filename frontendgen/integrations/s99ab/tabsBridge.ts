@@ -4,6 +4,21 @@ import { Events } from '@wailsio/runtime'
 import { computed, nextTick, onScopeDispose, ref, shallowRef, watch } from 'vue'
 import type { NativeTabDrag, NativeTabFace, NativeTabTrack, WorkspaceTab, TabWorkspace, TabStripGeometry } from '@smegg99/s99ab/tabs'
 import { isWails } from './environment'
+import {
+  TAB_ARRIVE_EVENT,
+  TAB_CANCELLED_EVENT,
+  TAB_CANCEL_EVENT,
+  TAB_DONE_EVENT,
+  TAB_DRAG_END_EVENT,
+  TAB_DROP_EVENT,
+  TAB_HOVER_EVENT,
+  TAB_RELEASE_EVENT,
+  TAB_TRACK_EVENT,
+  WINDOWS_CHANGED_EVENT,
+  WINDOW_BLOCKED_EVENT,
+  WINDOW_CLOSE_EVENT,
+  WINDOW_RESUME_EVENT,
+} from './names'
 
 export interface WindowInfo { name: string, label: string, ready: boolean }
 export interface WindowOffer {
@@ -176,16 +191,16 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
     window.addEventListener('keydown', blockKeys, true)
     cleanup.push(() => window.removeEventListener('keydown', blockKeys, true))
     // Listeners exist before Ready, so the new window cannot miss an offer.
-    listen('windows:changed', (event) => {
+    listen(WINDOWS_CHANGED_EVENT, (event) => {
       list.value = event.data as WindowInfo[]
     })
-    listen('tab:arrive', (event) => {
+    listen(TAB_ARRIVE_EVENT, (event) => {
       void arrive(event.data as WindowOffer)
     })
-    listen('tab:release', (event) => {
+    listen(TAB_RELEASE_EVENT, (event) => {
       void release(event.data as WindowOffer)
     })
-    listen('tab:cancel', (event) => {
+    listen(TAB_CANCEL_EVENT, (event) => {
       const id = transfers.get(event.data as string)
       if (id) ws.release(id)
       forget(event.data as string)
@@ -193,22 +208,22 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
         failure.value = options.errorKey(err)
       })
     })
-    listen('tab:cancelled', (event) => {
+    listen(TAB_CANCELLED_EVENT, (event) => {
       const offer = event.data as WindowOffer
       const tab = ws.tabs.find(tab => tab.id === offer.tab)
       if (tab) tab.moving = false
       forget(offer.id)
     })
-    listen('tab:done', event => forget(event.data as string))
-    listen('tab:hover', event => (incoming.value = event.data as WindowDrop | null))
-    listen('tab:track', (event) => {
+    listen(TAB_DONE_EVENT, event => forget(event.data as string))
+    listen(TAB_HOVER_EVENT, event => (incoming.value = event.data as WindowDrop | null))
+    listen(TAB_TRACK_EVENT, (event) => {
       if (dragging.value) track.value = event.data as NativeTabTrack
     })
-    listen('tab:drag-end', () => {
+    listen(TAB_DRAG_END_EVENT, () => {
       dragging.value = ''
       track.value = null
     })
-    listen('tab:drop', (event) => {
+    listen(TAB_DROP_EVENT, (event) => {
       const drop = event.data as WindowDrop
       if (drop.id !== dragging.value) return
       dragging.value = ''
@@ -221,13 +236,13 @@ export function bridgeDesktopTabs<T extends WorkspaceTab, P>(options: DesktopTab
       }
       else void move(tab, drop.target, drop.slot, drop.target ? undefined : { x: drop.x, y: drop.y, positioned: true })
     })
-    listen('window:blocked', (event) => {
+    listen(WINDOW_BLOCKED_EVENT, (event) => {
       failure.value = event.data as string
     })
-    listen('window:resume', () => {
+    listen(WINDOW_RESUME_EVENT, () => {
       closing.value = false
     })
-    listen('window:close', async (event) => {
+    listen(WINDOW_CLOSE_EVENT, async (event) => {
       closing.value = true
       failure.value = ''
       try {

@@ -36,9 +36,9 @@ type Track struct {
 }
 
 func init() {
-	application.RegisterEvent[Drop]("tab:drop")
-	application.RegisterEvent[*Drop]("tab:hover")
-	application.RegisterEvent[Track]("tab:track")
+	application.RegisterEvent[Drop](eventTabDrop)
+	application.RegisterEvent[*Drop](eventTabHover)
+	application.RegisterEvent[Track](eventTabTrack)
 }
 
 // DragImage hands the native drag the picture it carries outside the source
@@ -138,7 +138,7 @@ func (s *Service) followDrag(d *nativeDrag) {
 	defer func() {
 		application.InvokeSync(dndClear)
 		if lastTarget != "" {
-			s.registry.Emit(lastTarget, "tab:hover", nil)
+			s.registry.Emit(lastTarget, eventTabHover, nil)
 		}
 		s.mu.Lock()
 		if s.drag == d {
@@ -151,7 +151,7 @@ func (s *Service) followDrag(d *nativeDrag) {
 		case <-d.cancel:
 			return
 		case <-deadline.C:
-			s.registry.Emit(d.source, "tab:drag-end", d.id)
+			s.registry.Emit(d.source, eventTabDragEnd, d.id)
 			return
 		case <-ticker.C:
 		}
@@ -205,19 +205,19 @@ func (s *Service) followDrag(d *nativeDrag) {
 		}
 		if held && over != overSource {
 			overSource = over
-			s.registry.Emit(d.source, "tab:track", Track{Inside: over, X: drop.X - origin[0], Y: drop.Y - origin[1]})
+			s.registry.Emit(d.source, eventTabTrack, Track{Inside: over, X: drop.X - origin[0], Y: drop.Y - origin[1]})
 		}
 		if drop.Target != lastTarget && lastTarget != "" {
-			s.registry.Emit(lastTarget, "tab:hover", nil)
+			s.registry.Emit(lastTarget, eventTabHover, nil)
 		}
 		lastTarget = drop.Target
 		if !held {
-			s.registry.Emit(d.source, "tab:drop", drop)
+			s.registry.Emit(d.source, eventTabDrop, drop)
 			return
 		}
 		if drop.Target != "" && drop.Target != d.source {
 			drop.Face = d.face
-			s.registry.Emit(drop.Target, "tab:hover", drop)
+			s.registry.Emit(drop.Target, eventTabHover, drop)
 		}
 	}
 }

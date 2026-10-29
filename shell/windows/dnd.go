@@ -93,12 +93,12 @@ func dndTake() []dndEvent {
 func dragEnding(d *nativeDrag, dropped *Drop, failed int) (string, any) {
 	switch failed {
 	case dragResultTimeoutExpired, dragResultGrabBroken, dragResultError:
-		return "tab:drag-end", d.id
+		return eventTabDragEnd, d.id
 	}
 	if dropped != nil {
-		return "tab:drop", *dropped
+		return eventTabDrop, *dropped
 	}
-	return "tab:drop", Drop{ID: d.id, Tab: d.tab, Slot: -1}
+	return eventTabDrop, Drop{ID: d.id, Tab: d.tab, Slot: -1}
 }
 
 // handle names a window for the C callbacks, which cannot carry a Go string.
@@ -154,7 +154,7 @@ func (s *Service) followWayland(d *nativeDrag) {
 			dndClear()
 		})
 		if lastTarget != "" && lastTarget != d.source {
-			s.registry.Emit(lastTarget, "tab:hover", nil)
+			s.registry.Emit(lastTarget, eventTabHover, nil)
 		}
 		s.mu.Lock()
 		if s.drag == d {
@@ -164,12 +164,12 @@ func (s *Service) followWayland(d *nativeDrag) {
 	}()
 	hover := func(drop Drop) {
 		if drop.Target != lastTarget && lastTarget != "" && lastTarget != d.source {
-			s.registry.Emit(lastTarget, "tab:hover", nil)
+			s.registry.Emit(lastTarget, eventTabHover, nil)
 		}
 		lastTarget = drop.Target
 		if drop.Target != "" && drop.Target != d.source {
 			drop.Face = d.face
-			s.registry.Emit(drop.Target, "tab:hover", drop)
+			s.registry.Emit(drop.Target, eventTabHover, drop)
 		}
 	}
 	// track moves the pointer onto the source window or off it.
@@ -178,14 +178,14 @@ func (s *Service) followWayland(d *nativeDrag) {
 			overSource = inside
 			application.InvokeSync(func() { dndIcon(!inside) })
 		}
-		s.registry.Emit(d.source, "tab:track", Track{Inside: inside, X: x, Y: y})
+		s.registry.Emit(d.source, eventTabTrack, Track{Inside: inside, X: x, Y: y})
 	}
 	for {
 		select {
 		case <-d.cancel:
 			return
 		case <-deadline.C:
-			s.registry.Emit(d.source, "tab:drag-end", d.id)
+			s.registry.Emit(d.source, eventTabDragEnd, d.id)
 			return
 		case <-wake:
 			for _, e := range dndTake() {
@@ -245,7 +245,7 @@ func (s *Service) followWayland(d *nativeDrag) {
 			s.mu.Unlock()
 			source := native[d.source]
 			if source == nil {
-				s.registry.Emit(d.source, "tab:drag-end", d.id)
+				s.registry.Emit(d.source, eventTabDragEnd, d.id)
 				return
 			}
 			drop := Drop{ID: d.id, Tab: d.tab, Slot: -1}
@@ -272,7 +272,7 @@ func (s *Service) followWayland(d *nativeDrag) {
 			default:
 			}
 			if !ok {
-				s.registry.Emit(d.source, "tab:drag-end", d.id)
+				s.registry.Emit(d.source, eventTabDragEnd, d.id)
 				return
 			}
 			if held {
@@ -284,7 +284,7 @@ func (s *Service) followWayland(d *nativeDrag) {
 					drop.Target, drop.Slot = d.source, slot
 				}
 			}
-			s.registry.Emit(d.source, "tab:drop", drop)
+			s.registry.Emit(d.source, eventTabDrop, drop)
 			return
 		}
 	}
