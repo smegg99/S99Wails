@@ -5,6 +5,7 @@ package browser
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/smegg99/s99logger"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -32,6 +33,10 @@ func (s *Service) OpenURL(url string) error {
 	app := application.Get()
 	if app == nil {
 		return fmt.Errorf("open url: application not initialized")
+	}
+	if runtime.GOOS == "android" {
+		application.Mobile.OpenURL(url)
+		return nil
 	}
 	if err := app.Browser.OpenURL(url); err != nil {
 		if s.log != nil {
