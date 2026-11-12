@@ -11,6 +11,8 @@ import (
 var (
 	// hangAfter is how long a beating source may stay silent before the process counts as not responding.
 	hangAfter = 15 * time.Second
+	// quitAfter is how long a quit may take before the process counts as not responding.
+	quitAfter = 30 * time.Second
 	// stopAfter is how long a stopped process has to write its stacks before it is killed outright.
 	stopAfter = 5 * time.Second
 	// killedGrace lets a logout's SIGTERM reach the watcher before it reports a kill.
@@ -56,6 +58,7 @@ type watched struct {
 	up bool
 	// quitting is set once the app starts to quit; its cleanup may block every beat, the page's too.
 	quitting bool
+	quitAt   time.Time
 	oom      int64
 
 	hung       bool
@@ -80,7 +83,7 @@ func (w *watched) loop(events <-chan event, ui screen) int {
 			}
 			w.take(e, ui)
 		case <-check.C:
-			if !w.hung && time.Now().After(w.quietUntil) && w.stalled() {
+			if !w.hung && time.Now().After(w.quietUntil) && (w.stalled() || w.stuckQuitting()) {
 				w.hung = true
 				ui.show(w.report(KindHang, "", true))
 			}
@@ -127,7 +130,9 @@ func (w *watched) take(e event, ui screen) {
 	case lineUp:
 		w.up = true
 	case lineQuit:
-		w.quitting = true
+		if !w.quitting {
+			w.quitting, w.quitAt = true, time.Now()
+		}
 		clear(w.beats)
 	case eventTrace:
 		w.trace.WriteString(e.payload)
@@ -144,7 +149,12 @@ func (w *watched) stalled() bool {
 	return false
 }
 
-// end decides what the end of the pipe means: a stopped hang, a crash, a clean or early exit, or a kill.
+// stuckQuitting is whether a quit has run past quitAfter without the process ending.
+func (w *watched) stuckQuitting() bool {
+	return w.quitting && time.Since(w.quitAt) > quitAfter
+}
+
+// end decides what the end of the pipe means: a stopped hang, a crash, an exit that was expected, or a kill.
 func (w *watched) end(ui screen) int {
 	trace := strings.TrimSpace(w.trace.String())
 	switch {
@@ -152,7 +162,7 @@ func (w *watched) end(ui screen) int {
 		ui.show(w.report(KindHang, trace, false))
 	case trace != "":
 		ui.show(w.report(KindCrash, trace, false))
-	case w.bye || !w.up:
+	case w.bye || !w.up || w.quitting:
 		ui.quit()
 	default:
 		time.Sleep(killedGrace)

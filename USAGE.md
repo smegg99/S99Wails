@@ -121,25 +121,26 @@ crash.Describe(crash.Details{Lang: "pl", LogFile: logPath})
 crash.Show(opts, crash.Failure{Kind: crash.KindConfig, File: path, Err: err.Error()}) // before the main app
 // with the main app: register &crash.Heartbeat{}, call stop := crash.Beat() after application.New
 // (past its single-instance check); the quit ends it, stop() ends it earlier
-crash.Done()                               // last step of a clean shutdown
+crash.Done()                               // last step of a clean shutdown, outside any shutdown deadline
 ```
 
 `Watch` runs a watcher copy of the program and points `debug.SetCrashOutput`
-at a pipe to it. A line of up to 512 bytes goes into the pipe at once when the pipe has room and
-nothing is queued, so the lines just before a fatal crash are not lost;
-otherwise one writer goroutine sends the queue, and a full queue drops log lines
-and never blocks the app. `Done` and `PanicHandler` drain the queue for up to a
-second, then give the last line another second, so on Linux and macOS the
-process exits even when the watcher stopped reading. Windows pipes take no write
-deadline, so there the last write can still wait for the watcher. The watcher keeps
-the last 1000 log lines from `crash.Sink`, so a report has the debug history up
-to the end.
+at a pipe to it. The runtime makes its crash output blocking, so on Linux it gets
+its own file description of the pipe and the app's end stays non-blocking: a line
+of up to 512 bytes goes in at once when the pipe has room and nothing is queued,
+so the lines just before a fatal crash are not lost. Otherwise, and on other
+systems always, one writer goroutine sends the queue, and a full queue drops log
+lines; no caller ever blocks. `Done` and `PanicHandler` drain the queue for up to
+a second, then give the last line another second, so the process exits even when
+the watcher stopped reading. The watcher keeps the last 1000 log lines from
+`crash.Sink`, so a report has the debug history up to the end.
 
 | The pipe ends with | The watcher shows |
 | --- | --- |
 | `Done` | nothing |
 | no `Beat` yet, as when a second instance hands over to the first | nothing |
 | a crash trace, or a panic Wails recovered through `PanicHandler` | `crash`, with the trace |
+| a quit Wails started, as when a closer runs out of time or the user kills a slow quit | nothing |
 | none of these | `killed`; on Linux `oom` when `oom_kill` in its cgroup's `memory.events` rose |
 
 A native or page beat silent for 15 s opens `hang` with `alive`: Wait hides it
@@ -147,7 +148,8 @@ for another 15 s and beats that return hide it too; Kill sends SIGQUIT so the
 runtime writes every goroutine's stack into the report, then SIGKILL after
 5 s. Windows has no SIGQUIT, so its hang report has no stacks. When Wails
 starts to quit, `Beat` tells the watcher, which stops expecting native and page
-beats, so a slow shutdown is never a hang. Close and Restart
+beats; a quit still running after 30 s opens `hang` the same way, so a quit that
+never ends can be killed with its stacks. Close and Restart
 are refused while a hung app still runs. A watcher that
 gets SIGTERM, as at logout or from a dev runner signalling the process group,
 dies quietly.

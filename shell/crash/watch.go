@@ -57,12 +57,25 @@ func spawn(exe string, args []string) error {
 		_ = w.Close()
 		return fmt.Errorf("start crash watcher: %w", err)
 	}
-	if err := debug.SetCrashOutput(w, debug.CrashOptions{}); err != nil {
+	if err := attach(w); err != nil {
 		_ = w.Close()
+		return err
+	}
+	Describe(described())
+	return nil
+}
+
+// attach sends the runtime's crash output and this package's lines into w.
+func attach(w *os.File) error {
+	crashOut, own := separate(w)
+	err := debug.SetCrashOutput(crashOut, debug.CrashOptions{})
+	if own {
+		_ = crashOut.Close()
+	}
+	if err != nil {
 		return fmt.Errorf("set crash output: %w", err)
 	}
-	out.Store(newPipe(w))
-	Describe(described())
+	out.Store(newPipe(w, own))
 	return nil
 }
 

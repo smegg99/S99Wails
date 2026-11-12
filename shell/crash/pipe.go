@@ -32,7 +32,9 @@ const (
 
 // pipe writes a line at once when there is room and no queue, else one goroutine writes the queue; no caller blocks.
 type pipe struct {
-	w       *os.File
+	w *os.File
+	// direct is whether w stays non-blocking, so a line can be tried at once.
+	direct  bool
 	lines   chan string
 	done    chan struct{}
 	dropped atomic.Int64
@@ -45,8 +47,8 @@ type pipe struct {
 
 var out atomic.Pointer[pipe]
 
-func newPipe(w *os.File) *pipe {
-	p := &pipe{w: w, lines: make(chan string, queued), done: make(chan struct{})}
+func newPipe(w *os.File, direct bool) *pipe {
+	p := &pipe{w: w, direct: direct, lines: make(chan string, queued), done: make(chan struct{})}
 	go p.run()
 	return p
 }
@@ -89,7 +91,7 @@ func send(kind, payload string) {
 		return
 	}
 	line := frame(kind, payload)
-	if p.pending.Load() == 0 && tryWrite(p.w, line) {
+	if p.direct && p.pending.Load() == 0 && tryWrite(p.w, line) {
 		return
 	}
 	p.pending.Add(1)
@@ -112,11 +114,18 @@ func Done() {
 	finish(p, frame(lineBye, ""), time.Second)
 }
 
-// finish drains p and writes text last, each step bounded by timeout so a gone watcher never blocks exit.
+// finish drains p and writes text last, each step bounded by timeout so a watcher that stopped reading never blocks exit.
 func finish(p *pipe, text string, timeout time.Duration) {
 	drain(p, timeout)
-	_ = p.w.SetWriteDeadline(time.Now().Add(timeout))
-	p.write(text)
+	written := make(chan struct{})
+	go func() {
+		p.write(text)
+		close(written)
+	}()
+	select {
+	case <-written:
+	case <-time.After(timeout):
+	}
 }
 
 // drain closes p to new lines and waits up to timeout for the queued ones; true when they all went out.

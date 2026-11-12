@@ -27,7 +27,7 @@ func TestMain(m *testing.M) {
 	out := os.Getenv(helperOut)
 	switch {
 	case out != "" && os.Getenv(watcherEnv) != "":
-		hangAfter, checkEvery, killedGrace = time.Second, 50*time.Millisecond, 10*time.Millisecond
+		hangAfter, quitAfter, checkEvery, killedGrace = time.Second, time.Second, 50*time.Millisecond, 10*time.Millisecond
 		pid, _ := strconv.Atoi(os.Getenv(watcherEnv))
 		events := make(chan event, 256)
 		go readPipe(os.Stdin, events)
@@ -66,6 +66,9 @@ func TestMain(m *testing.M) {
 		case "hang":
 			send(lineUp, "")
 			send(lineBeat, sourceNative)
+		case "quitting":
+			send(lineUp, "")
+			send(lineQuit, "")
 		}
 		select {}
 	}
@@ -169,6 +172,28 @@ func TestWatcherShowsAKill(t *testing.T) {
 	r := shown(t, steps, 0)
 	if r.Kind != KindKilled || r.Alive || !strings.Contains(r.Text, "last words") {
 		t.Fatalf("report = %+v", r)
+	}
+}
+
+// A process ended while it quits, by a kill or a closer that runs out of time, was already on its way out.
+func TestWatcherStaysQuietWhenAQuittingAppIsKilled(t *testing.T) {
+	steps := watchRole(t, "quitting", func(cmd *exec.Cmd) {
+		time.Sleep(300 * time.Millisecond)
+		_ = cmd.Process.Kill()
+	})
+	if len(steps) != 2 || steps[0] != "quit" || steps[1] != "exit" {
+		t.Fatalf("steps = %q, want quit then exit", steps)
+	}
+}
+
+func TestWatcherStopsAQuitThatNeverEndsAndShowsItsStacks(t *testing.T) {
+	steps := watchRole(t, "quitting", func(*exec.Cmd) {})
+	waiting, stopped := shown(t, steps, 0), shown(t, steps, 1)
+	if waiting.Kind != KindHang || !waiting.Alive {
+		t.Fatalf("first report = %+v, want a live hang", waiting)
+	}
+	if stopped.Kind != KindHang || stopped.Alive || !strings.Contains(stopped.Text, "goroutine") {
+		t.Fatalf("second report = %+v, want the stopped quit with stacks", stopped)
 	}
 }
 
