@@ -51,6 +51,7 @@ extracted once, so the next app imports it instead. Pairs well with
 - `shell/crash`: a watcher copy of the program that opens the app's own
   frontend as an error screen when the app cannot start, crashes, stops
   responding or is killed. See [USAGE](USAGE.md#error-screen).
+- `shell/update`: desktop GitHub update checks and bundled release notes with persistent version choices.
 - `shell/windowstate`: window geometry persisted across runs behind a two-method
   Store interface.
 - `services/{browser,logger,theme,title}`: Wails-bound services with typed TS

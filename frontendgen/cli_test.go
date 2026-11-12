@@ -22,7 +22,7 @@ func execute(args ...string) (int, string) {
 func TestCommandEmitsIntoOutAndSaysHowMany(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "gen")
 	code, out := execute("--out", dir, "--s99ab")
-	if code != 0 || !strings.Contains(out, "Emitted the composables") || !strings.Contains(out, "files=13") {
+	if code != 0 || !strings.Contains(out, "Emitted the composables") || !strings.Contains(out, "files=14") {
 		t.Fatalf("code %d, out %q", code, out)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "tabsBridge.ts")); err != nil {

@@ -19,6 +19,8 @@ var update = flag.Bool("update", false, "rewrite assets/names.ts from the Go con
 
 // shared is every name the emitted TypeScript uses with Go: a const's value, or a type's Wails service path.
 var shared = []struct{ ts, dir, goName, doc string }{
+	{"UPDATE_SERVICE", "shell/update", "type Service", "The shell/update.Service path for Call.ByName."},
+	{"UPDATE_AVAILABLE_EVENT", "shell/update", "availableEvent", "Carries a newer release a check found."},
 	{"CRASH_SERVICE", "shell/crash", "type Service", "The shell/crash.Service path for Call.ByName."},
 	{"CRASH_HEARTBEAT", "shell/crash", "type Heartbeat", "The shell/crash.Heartbeat path for Call.ByName."},
 	{"CRASH_QUERY", "shell/crash", "Query", "The URL query key that marks the crash screen's window."},

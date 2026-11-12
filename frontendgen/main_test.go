@@ -23,6 +23,7 @@ func TestRunEmitsComposables(t *testing.T) {
 		"names.ts":       "theme:changed",
 		"logBridge.ts":   "unhandledrejection",
 		"appTitle.ts":    "useAppTitle",
+		"updateCheck.ts": "updateActions",
 	} {
 		data, err := os.ReadFile(filepath.Join(out, "s99wails", file))
 		if err != nil {

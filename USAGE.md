@@ -169,6 +169,63 @@ import { crashActions, installCrashHeartbeat, isCrashWindow, onCrashReport } fro
 An `appIcon` block in `trayicons.cue` adds the window icon as `AppIcon`, a PNG
 for `application.Options.Icon` (README, "Code generation").
 
+## Update check
+
+`shell/update` checks stable GitHub releases of a public repository and selects
+one newer than the running version with an asset for the desktop OS and
+architecture. Drafts, prereleases and releases for another platform are skipped.
+It only opens a download page; it does not download or install the update.
+
+```go
+updates := update.New(update.Options{
+    Owner: "smegg99", Repo: "App", Version: version,
+    DownloadURL: "https://example.com/#downloads",
+    Changelog: changelog, Store: store,
+    Enabled: func() bool { return settings.CheckUpdates },
+    Existing: hasHistory, OnError: logWarning,
+})
+// Add application.NewService(updates) to application.Options.Services.
+stop := update.Schedule(updates) // after application.New
+// Call stop() before closing the installation store on shutdown.
+```
+
+`Schedule` checks after 10 seconds, then every 6 hours. It derives its context
+from the application and cancels the in-flight request when stopped; `stop`
+returns immediately and can be called repeatedly. Calling `Check(ctx)` starts
+a manual check, including when the setting is turned on. Overlapping checks do not start another request. Disabled checks, empty versions and non-desktop
+platforms make no request; nil `Enabled` means enabled.
+
+A check sends one plain GET to the GitHub API with User-Agent `Repo/Version`.
+No install ID, usage data, token or other application data is sent. HTTP and
+storage failures reach `OnError`; the check returns its error and emits no
+failure event. `APIBase` and `HTTPClient` let tests use a local server.
+`DownloadURL` overrides the GitHub release page; an empty value uses that page.
+
+`Store` provides `Load() (Memory, bool, error)` and `Save(Memory) error`.
+`Memory.Ignored` is the version the user ignored, without its leading `v`;
+`Memory.Notes` is the last running version whose notes were handled. Storage
+is read lazily, so construct the service before opening the application store.
+A fresh installation records its version silently. When `Existing` reports
+prior application data, or the stored notes version is older, `State(locale)`
+returns the bundled changelog resolved from `<!-- lang:xx -->` sections, falling
+back to English. Empty notes are omitted. Notes work offline and are independent
+of `Enabled`. Nil `Existing` means a fresh installation.
+
+`frontendgen` emits `updateActions` and its `UpdateRelease`, `UpdateNotes`,
+`UpdateState` and `UpdateActions` types. The calls use generated service names:
+
+| Action | Go method | Result |
+| --- | --- | --- |
+| `state(locale)` | `State` | current version, optional update and optional notes with their language |
+| `ignore(version)` | `Ignore` | persists this ignored version; newer versions can still appear |
+| `notesShown()` | `NotesShown` | records the running version and preserves the ignored version |
+| `download()` | `Download` | opens the found release's page in the system browser |
+| `check()` | `Check` | starts an enabled check now |
+| `onAvailable(callback)` | event `s99update:available` | receives a Release; returns an unsubscribe function |
+
+The frontend reads state on load and after events. It owns dialog visibility
+and ordering; `shell/update` does not show or raise a window.
+
 ## Tray artwork
 
 The generated `ForStatus` supplies SVG icon themes and native bitmap assets
