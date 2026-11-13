@@ -64,6 +64,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
 github.com/rivo/uniseg v0.4.7/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
+github.com/smegg99/s99base v1.0.0 h1:ZeO12UvLeOO7guocD1Yo5UDGEnSTHn4/2yqmwlLNKk0=
+github.com/smegg99/s99base v1.0.0/go.mod h1:KJHUDjLc1BiH/PJkYennC8JpdDhg9ZSjv/YQv4GJfEU=
 github.com/smegg99/s99locale v1.1.0 h1:xOEdPEngcHuS1yhRjd+RaKSvWelifQSRITRynlVWL8Q=
 github.com/smegg99/s99locale v1.1.0/go.mod h1:XAUhh92p6UxZDEgK4BV08jRLzFnj4XYdq/BhDvpNUVU=
 github.com/smegg99/s99logger v1.3.0 h1:wUrBTnjVqWS1l/fIJBtURuOSNyVF6ISQgnCURHMS7VI=

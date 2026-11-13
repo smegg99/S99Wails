@@ -6,7 +6,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/smegg99/s99config v1.1.0
 	github.com/smegg99/s99logger v1.3.0
-	github.com/smegg99/s99wails/v2 v2.0.0
+	github.com/smegg99/s99wails/v2 v2.2.0
 	github.com/wailsapp/wails/v3 v3.0.0
 )
 
@@ -83,7 +83,6 @@ tool (
 )
 
 replace (
-	github.com/smegg99/s99base => ../../S99Base
 	github.com/smegg99/s99wails/traygen/v2 => ../traygen
 	github.com/smegg99/s99wails/v2 => ../
 )

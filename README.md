@@ -112,10 +112,10 @@ The module pins upstream `wails/v3 v3.0.0`. On Linux, build with
 `-tags gtk3` (WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many
 GPU setups.
 
-After v1.0.4 this module also requires
-[s99ab](https://github.com/smegg99/S99AB), which is private too. It is pinned
-to a released tag, not a `replace`, because a dependency's `replace` does not
-apply to your build. The ssh configuration above lets your build fetch it.
+This module uses [S99Base](https://github.com/smegg99/S99Base) for GitHub releases,
+localized release notes and version comparison. It does not import S99AB's Go
+module. The optional `frontendgen --s99ab` bridges connect generated composables
+to the S99AB Nuxt layer.
 
 To develop against local checkouts instead of released tags, point replace
 directives at them in your app:
@@ -124,7 +124,7 @@ directives at them in your app:
 replace (
 	github.com/smegg99/s99wails/v2 => ../S99Wails
 	github.com/smegg99/s99wails/traygen/v2 => ../S99Wails/traygen
-	github.com/smegg99/s99ab => ../S99AB
+	github.com/smegg99/s99base => ../S99Base
 )
 ```
 
