@@ -2,34 +2,51 @@
 
 `s99wails` is a set of reusable building blocks for Wails v3 desktop apps:
 OS accent and dark-mode detection, native-side localization, a theme-aware
-system tray, window-state persistence, autostart, environment workarounds,
-and ready-made Wails services.
+system tray, native workspaces and tab transfers, update checks, crash screens,
+window-state persistence, autostart, WebKit workarounds and Wails services.
 
 [USAGE.md](USAGE.md) is how an app imports it.
 
-## Why
+## Architecture
 
-Every Wails app I built started by copying the previous app's desktop
-shell: the tray manager, the accent watcher, the webkit workarounds (gtk 4 works very badly under amd on wayland, at least in my case, using gtk 3 fixed it), the
-locale wrapper. The copies drifted apart. This module is that shared part,
-extracted once, so the next app imports it instead. Pairs well with
-[s99config](https://github.com/smegg99/S99Config) and
-[s99logger](https://github.com/smegg99/S99Logger).
+![S99Wails packages, generators and shared dependencies](docs/contents.svg)
+
+Diagram sources: [`docs/contents.dot`](docs/contents.dot).
+Render with Graphviz: `dot -Tsvg docs/contents.dot -o docs/contents.svg`.
+
+The [shared relationship graph](https://github.com/smegg99/S99Base/blob/main/docs/relations.svg)
+shows the complete connections between these three libraries:
+
+| Boundary | Dependency | Code |
+| --- | --- | --- |
+| Go: `shell/update` | S99Base `release/ghreleases`, `release/mdlocale`, `release/version` | [latest.go](shell/update/latest.go), [notes.go](shell/update/notes.go), [memory.go](shell/update/memory.go) |
+| Optional generated TypeScript | S99AB `@smegg99/s99ab/appearance` | [appearanceBridge.ts](frontendgen/integrations/s99ab/appearanceBridge.ts) |
+| Optional generated TypeScript | S99AB `@smegg99/s99ab/tabs` | [tabsBridge.ts](frontendgen/integrations/s99ab/tabsBridge.ts) |
+
+The root Go module requires S99Base v1.0.0 and Wails v3.0.0. It does not import
+S99AB's Go module. Without `frontendgen --s99ab`, the emitted helpers have no
+S99AB dependency. With it, `bridgeDesktopAppearance` supplies OS appearance and
+`bridgeDesktopTabs` connects S99AB tabs to native workspace windows. The app
+supplies generated service bindings, persistence and view payloads.
+
+[S99Config](https://github.com/smegg99/S99Config) is used by the example config
+service; [S99Logger](https://github.com/smegg99/S99Logger) and
+[S99Locale](https://github.com/smegg99/S99Locale) support logging and localization.
 
 ## Features
 
 - `platform/accent`: OS accent color and dark/light scheme, with a change watcher.
   Linux (XDG portal), Windows (registry), macOS (defaults). No Wails
   dependency.
-- `platform/notify`: lazy Linux notification transport shared by native callers;
+- `platform/notify`: lazy Linux notification transport with optional activation callbacks;
   failures remain errors, and the next send reconnects. Other platforms return
   `errors.ErrUnsupported`.
 - `platform/runtimestore`: small per-user values under `$XDG_RUNTIME_DIR`,
   private to the user and cleared at logout.
 - `platform/autostart`: launch on login, per user, no elevation. XDG `.desktop`,
   registry Run key, LaunchAgent.
-- `platform/env`: WebKitGTK DMABUF workaround, AppImage detection, opt-in X11
-  default for Plasma Wayland sessions.
+- `platform/env`: selectable WebKitGTK render paths (`auto`, `nogbm`, `shm`,
+  `legacy`), AppImage detection and opt-in X11 default for Plasma Wayland sessions.
 - `locale`: go-i18n wrapper for native-side strings with plurals, template
   data, language matching, and an OnChange hook. No Wails dependency. It loads
   the flat JSON `backend` target of [S99Locale](https://github.com/smegg99/S99Locale)
@@ -78,24 +95,22 @@ they need the platform's webview stack:
 - GTK 3 dev headers: `libgtk-3-dev` on Debian, `gtk3-devel` on Fedora
 - WebKit2GTK 4.1 dev headers: `libwebkit2gtk-4.1-dev`,
   `webkit2gtk4.1-devel`
-- Node.js and pnpm, only to run the TypeScript half of `just check`
+- Node.js compatible with the dev dependencies and pnpm 10.30.1, only for the
+  TypeScript checks; install with `pnpm install --frozen-lockfile`
+- `just` to run the repository recipes
 
 `webbench` and `cmd/s99webbench` are Linux only: `webbench.Run` lives in a
 cgo file behind a linux build tag, so the command does not compile elsewhere.
 
 ## Install
 
-This repository is private, so `go get` needs Go pointed away from the public
-proxy and git pointed at ssh:
+If your checkout requires private-repository access, configure Go and Git for
+an account with access:
 
 ```sh
 go env -w GOPRIVATE='github.com/smegg99/*'
 git config --global url."ssh://git@github.com/smegg99/".insteadOf "https://github.com/smegg99/"
 ```
-
-Set both. `GOPRIVATE` alone makes Go fetch over direct git, which then has no
-credentials. proxy.golang.org still serves v1.0.0 through v1.0.4 without any
-configuration; v1.1.0 and later are not on the public proxy.
 
 ```sh
 go get github.com/smegg99/s99wails/v2
@@ -106,7 +121,7 @@ go get -tool github.com/smegg99/s99wails/v2/frontendgen
 In v2 the OS-facing packages live under `platform/`, the window and tray ones
 under `shell/`, and the import path carries the `/v2` suffix. `traygen` is a
 separate module; the code it emits imports `shell/tray`, so it also carries the
-suffix and is tagged `traygen/v2.1.1`.
+suffix. Its tags use the `traygen/v2.x.y` prefix independently of the root module.
 
 The module pins upstream `wails/v3 v3.0.0`. On Linux, build with
 `-tags gtk3` (WebKit2GTK 4.1); the GTK 4 stack renders a blank window on many
@@ -230,8 +245,15 @@ a usage error.
 
 ## Examples
 
-Run any terminal example with `go run ./examples/name`; the ones marked
-gtk3 open a window and need `-tags gtk3` on Linux.
+Examples are a separate Go module. Run terminal examples from that directory:
+
+```sh
+cd examples
+go run ./accent
+```
+
+The examples marked gtk3 open a window and need `go run -tags gtk3 ./name` on
+Linux. They require a display and the native development libraries above.
 
 | Example | Shows |
 | --- | --- |
@@ -278,4 +300,4 @@ and tsc; the composables reach an app through frontendgen, not npm.
 
 ## License
 
-MIT
+[MIT](LICENSE).

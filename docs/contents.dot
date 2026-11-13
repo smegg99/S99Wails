@@ -1,0 +1,15 @@
+// docs/contents.dot
+// Render: dot -Tsvg docs/contents.dot -o docs/contents.svg
+digraph contents {
+  graph [bgcolor="white", pad=0.25, nodesep=0.4, ranksep=0.65];
+  node [shape=record, fontname="Arial", fontsize=12, margin="0.15,0.1"];
+  edge [fontname="Arial", fontsize=10, arrowsize=0.7];
+  rankdir=LR;
+  root [label="S99Wails", shape=box];
+  platform [label="{platform|accent: OS theme + color\lautostart: launch on login\lenv: WebKit workarounds\lnotify: Linux notifications\lruntimestore: runtime values\l}"];
+  locale [label="{locale|Native translations + plurals}"];
+  shell [label="{shell|tray: icons + menus\lwindow, windowstate: geometry\lwindows: workspaces + tab transfers\leditkeys, mousenav: native input\lcrash: error-screen watcher\lupdate: release checks + notes\l}"];
+  services [label="{services|browser, logger, theme, title}"];
+  tools [label="{Tools|frontendgen: Vue helpers + optional S99AB bridges\ltraygen: tray artwork + Go accessors (separate module)\lwebbench: Linux WebKit measurements\l}"];
+  root -> { platform locale shell services tools } [dir=none];
+}
